@@ -14,6 +14,7 @@ type Section struct {
 }
 
 type Item struct {
+	ID          int64
 	Slug        string
 	Title       string
 	Subtitle    string

@@ -124,6 +124,11 @@ func (s Store) AddItem(sectionSlug string, item Item) error {
 	return err
 }
 
+func (s Store) DeleteItem(id int64) error {
+	_, err := s.conn.Exec(`DELETE FROM items WHERE id = ?`, id)
+	return err
+}
+
 func (s Store) Item(slug string) (Item, error) {
 	var item Item
 	var rawTags string
@@ -166,7 +171,7 @@ func (s Store) Item(slug string) (Item, error) {
 
 func (s Store) items(sectionID int64) ([]Item, error) {
 	rows, err := s.conn.Query(`
-		SELECT slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
+		SELECT id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
 		FROM items
 		WHERE section_id = ?
 		ORDER BY sort_order, id
@@ -186,6 +191,7 @@ func (s Store) items(sectionID int64) ([]Item, error) {
 		var rawBuilt sql.NullString
 		var rawLearned sql.NullString
 		if err := rows.Scan(
+			&item.ID,
 			&rawSlug,
 			&item.Title,
 			&item.Subtitle,

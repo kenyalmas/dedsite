@@ -1,0 +1,35 @@
+{{ define "admin_sections_list.html" }}
+  <div id="admin-sections-list" class="admin-section-list">
+    {{ range .Site.Sections }}
+      <section class="admin-section-group">
+        <header>
+          <span>{{ .Title }}</span>
+          <strong>{{ len .Items }}</strong>
+        </header>
+
+        {{ if .Items }}
+          <ul>
+            {{ range .Items }}
+              <li>
+                <span>{{ .Title }}</span>
+                <button
+                  type="button"
+                  class="danger-button"
+                  hx-delete="/admin/items/{{ .ID }}"
+                  hx-target="#admin-sections-list"
+                  hx-swap="outerHTML"
+                  hx-headers='{"X-CSRF-Token": "{{ $.CSRFToken }}"}'
+                  hx-confirm="Delete {{ .Title }}?"
+                >
+                  delete
+                </button>
+              </li>
+            {{ end }}
+          </ul>
+        {{ else }}
+          <p class="empty">No entries yet.</p>
+        {{ end }}
+      </section>
+    {{ end }}
+  </div>
+{{ end }}

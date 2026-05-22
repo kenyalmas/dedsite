@@ -29,7 +29,13 @@
               <h1>Control Panel</h1>
               <p class="summary">Logged in as {{ .User.Username }}. Keep the portfolio stocked without spelunking through seed files.</p>
             </div>
-            <a class="contact" href="/">View site</a>
+            <div class="dashboard-actions">
+              <a class="contact" href="/">View site</a>
+              <form method="post" action="/admin/logout">
+                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+                <button class="contact" type="submit">Log out</button>
+              </form>
+            </div>
           </header>
 
           <div class="dashboard-stats" aria-label="Site stats">
@@ -68,14 +74,7 @@
 
           <section class="admin-panel">
             <h2>Current Sections</h2>
-            <ul class="admin-section-list">
-              {{ range .Site.Sections }}
-                <li>
-                  <span>{{ .Title }}</span>
-                  <strong>{{ len .Items }}</strong>
-                </li>
-              {{ end }}
-            </ul>
+            {{ template "admin_sections_list.html" . }}
           </section>
         </div>
       </section>

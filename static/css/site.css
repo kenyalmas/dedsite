@@ -710,6 +710,22 @@ h1 {
   gap: 18px;
 }
 
+.dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.dashboard-actions form {
+  margin: 0;
+}
+
+.dashboard-actions button.contact {
+  cursor: pointer;
+  font: inherit;
+}
+
 .dashboard-stats,
 .admin-grid {
   display: grid;
@@ -756,7 +772,8 @@ h1 {
   content: "$ ";
 }
 
-.admin-section-list {
+.admin-section-list,
+.admin-section-group ul {
   display: grid;
   gap: 8px;
   margin: 0;
@@ -764,7 +781,17 @@ h1 {
   list-style: none;
 }
 
-.admin-section-list li {
+.admin-section-group {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-section-group + .admin-section-group {
+  margin-top: 14px;
+}
+
+.admin-section-group header,
+.admin-section-group li {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -776,8 +803,37 @@ h1 {
   color: var(--muted);
 }
 
-.admin-section-list strong {
+.admin-section-group header {
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
+.admin-section-group strong {
   color: var(--terminal-cyan);
+}
+
+.admin-section-group li {
+  margin-left: 12px;
+}
+
+.danger-button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(251, 113, 133, 0.72);
+  border-radius: 7px;
+  background: rgba(251, 113, 133, 0.1);
+  color: #fecdd3;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.danger-button:hover,
+.danger-button:focus-visible {
+  background: rgba(251, 113, 133, 0.18);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.14);
 }
 
 .section-actions {
@@ -957,6 +1013,10 @@ h1 {
   .dashboard-header .contact,
   .admin-grid .admin-panel + .admin-panel {
     margin-top: 16px;
+  }
+
+  .dashboard-actions {
+    justify-content: flex-start;
   }
 
   .dashboard-stats {

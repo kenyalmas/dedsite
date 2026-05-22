@@ -12,6 +12,7 @@
       hx-target="#entry-manager"
       hx-swap="outerHTML"
     >
+      <input name="csrf_token" type="hidden" value="{{ .CSRFToken }}">
       <div class="form-grid">
         <label>
           title
