@@ -32,7 +32,11 @@
 
         {{ if .Tags }}
           <ul class="tags" aria-label="Technologies">
-            {{ range .Tags }}<li data-tag="{{ . }}">{{ . }}</li>{{ end }}
+            {{ range .Tags }}
+              <li>
+                <button type="button" data-tag="{{ . }}">{{ . }}</button>
+              </li>
+            {{ end }}
           </ul>
         {{ end }}
       </article>

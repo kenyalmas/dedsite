@@ -632,16 +632,45 @@ h1 {
 }
 
 .tags li {
-  padding: 5px 9px;
   border: 1px solid var(--line-soft);
   border-radius: 7px;
   background: var(--tag);
-  color: var(--terminal-cyan);
   font-size: 0.84rem;
   font-weight: 700;
+  overflow: hidden;
 }
 
-.tags li::before {
+.tags button,
+.tags span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 0;
+  background: transparent;
+  color: var(--terminal-cyan);
+  font: inherit;
+  letter-spacing: 0;
+}
+
+.tags button {
+  cursor: pointer;
+}
+
+.tags button:hover,
+.tags button:focus-visible,
+.tags button.is-active {
+  background: rgba(103, 232, 249, 0.12);
+  color: var(--accent-strong);
+  outline: none;
+}
+
+.tags button.is-active {
+  box-shadow: inset 0 0 0 1px var(--terminal-cyan);
+}
+
+.tags button::before,
+.tags span::before {
   color: var(--accent);
   content: "--";
 }

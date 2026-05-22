@@ -8,6 +8,7 @@
   }
 
   var pendingFilter = null;
+  var activeFilter = null;
 
   function items() {
     return Array.from(document.querySelectorAll("#section-panel .item"));
@@ -91,6 +92,8 @@
     items().forEach(function (item) {
       item.hidden = false;
     });
+    activeFilter = null;
+    setActiveTags("");
   }
 
   function filterItems(keyword) {
@@ -109,6 +112,19 @@
     return count;
   }
 
+  function setActiveTags(tag) {
+    var needle = normalize(tag || "");
+    document.querySelectorAll("[data-tag]").forEach(function (tagButton) {
+      var matched = needle && normalize(tagButton.textContent) === needle;
+      tagButton.classList.toggle("is-active", matched);
+      if (matched) {
+        tagButton.setAttribute("aria-pressed", "true");
+      } else {
+        tagButton.setAttribute("aria-pressed", "false");
+      }
+    });
+  }
+
   function filterTag(tag) {
     var needle = normalize(tag);
     var count = 0;
@@ -122,7 +138,16 @@
       }
     });
 
+    activeFilter = { type: "tag", value: tag };
+    setActiveTags(tag);
     return count;
+  }
+
+  function showTagFilter(tag, output) {
+    var count = filterTag(tag);
+    if (output) {
+      output.textContent = count + " item(s) tagged " + tag + " - type clear to reset";
+    }
   }
 
   function activateSection(slug) {
@@ -311,6 +336,20 @@
 
     input.addEventListener("input", updateGhost);
 
+    document.addEventListener("click", function (event) {
+      var tag = event.target.closest("[data-tag]");
+      if (!tag) {
+        return;
+      }
+
+      var value = tag.textContent.trim();
+      if (!value) {
+        return;
+      }
+
+      showTagFilter(value, output);
+    });
+
     input.addEventListener("keydown", function (event) {
       if (event.key !== "Tab" && event.key !== "ArrowRight") {
         return;
@@ -340,6 +379,9 @@
     document.body.addEventListener("htmx:afterSwap", function (event) {
       if (event.target.id === "section-panel") {
         applyPendingFilter();
+        if (activeFilter && activeFilter.type === "tag") {
+          setActiveTags(activeFilter.value);
+        }
       }
     });
   }

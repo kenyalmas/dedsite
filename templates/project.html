@@ -61,7 +61,7 @@
             <h3>Tech Stack</h3>
             {{ if .Item.TechStack }}
               <ul class="tags" aria-label="Tech stack">
-                {{ range .Item.TechStack }}<li>{{ . }}</li>{{ end }}
+                {{ range .Item.TechStack }}<li><span>{{ . }}</span></li>{{ end }}
               </ul>
             {{ else }}
               <p class="placeholder">Stack trace pending: probably caffeine, curiosity, and one suspicious adapter.</p>
