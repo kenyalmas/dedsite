@@ -60,6 +60,22 @@ To start without seeding or syncing the default content:
 go run ./cmd/server --no-seed --db data/site-dev.db
 ```
 
+## Running With Docker
+
+Build and run the app with Docker Compose:
+
+```powershell
+docker compose up --build
+```
+
+Open:
+
+```text
+http://localhost:8082
+```
+
+The container stores SQLite data in `/app/data/site.db`, mounted from the local `data` directory by `docker-compose.yml`.
+
 ## Configuration
 
 `ADDR` sets the server listen address. The default is `:8080`.

@@ -1,0 +1,16 @@
+.git
+.gocache
+.vscode
+data
+bin
+build
+dist
+*.db
+*.sqlite
+*.sqlite3
+*.log
+coverage.txt
+coverage.out
+whitepaper.md
+Dockerfile
+docker-compose.yml
