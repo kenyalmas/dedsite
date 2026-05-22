@@ -6,6 +6,7 @@
   <title>{{ .Profile.Name }} | {{ .Profile.Title }}</title>
   <link rel="stylesheet" href="/static/css/site.css?v=terminal-1">
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+  <script src="/static/js/command-palette.js?v=1" defer></script>
 </head>
 <body>
   <div class="terminal">
@@ -48,6 +49,25 @@
       </aside>
 
       <section class="portfolio" aria-label="Portfolio">
+        <form class="command-palette" data-command-palette autocomplete="off">
+          <label class="command-label" for="command-input">~/resume $</label>
+          <div class="command-input-wrap">
+            <span class="command-ghost" data-command-ghost aria-hidden="true"></span>
+            <input id="command-input" name="command" type="text" spellcheck="false" placeholder="help" aria-label="Command" aria-describedby="command-hint">
+          </div>
+          <button type="submit">run</button>
+          <p id="command-hint" class="command-output" data-command-output aria-live="polite"></p>
+        </form>
+
+        <div class="command-index" hidden aria-hidden="true">
+          {{ range .Sections }}
+            {{ $section := .Slug }}
+            {{ range .Items }}
+              <span data-command-entry data-section="{{ $section }}" data-search="{{ .Title }} {{ .Subtitle }} {{ .Period }} {{ .Description }} {{ .URL }} {{ range .Tags }} {{ . }}{{ end }}" data-tags="{{ range .Tags }}{{ . }}|{{ end }}"></span>
+            {{ end }}
+          {{ end }}
+        </div>
+
         {{ template "tabs.html" . }}
 
         <div id="section-panel" class="section-panel" aria-live="polite">

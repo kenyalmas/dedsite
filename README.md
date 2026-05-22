@@ -73,3 +73,14 @@ To add an image to any section item, set `ImageURL` and optionally `ImageAlt` in
 The section tabs request `/section/{slug}` with HTMX. Normal browser requests get the full page. HTMX requests get a smaller partial response that swaps the section content and updates the active tab state.
 
 Template changes require restarting the Go server because templates are parsed on startup. CSS changes usually only need a browser refresh.
+
+## Command Palette Search
+
+The command palette above the section tabs accepts short commands.
+
+- Press `/` to focus the command input.
+- Type a section command such as `projects`, `security`, or `ai` to jump sections.
+- Type `tags` to list searchable tags.
+- Type a tag such as `networking`, `ctf`, or `rf` to jump to the first matching section and filter visible cards.
+- Type `find <keyword>` or `search <keyword>` to search titles, descriptions, URLs, section names, and tags.
+- Type `clear` to remove the active filter.

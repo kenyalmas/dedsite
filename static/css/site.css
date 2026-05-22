@@ -252,6 +252,95 @@ h1 {
   min-width: 0;
 }
 
+.command-palette {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: #05040a;
+}
+
+.command-label {
+  color: var(--terminal-green);
+  font-size: 0.9rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.command-input-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.command-palette input,
+.command-ghost {
+  width: 100%;
+  font: inherit;
+  letter-spacing: 0;
+}
+
+.command-palette input {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink);
+  outline: none;
+  padding: 0 12px;
+  caret-color: var(--terminal-green);
+}
+
+.command-input-wrap {
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: var(--surface);
+}
+
+.command-ghost {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 12px;
+  color: rgba(167, 160, 188, 0.42);
+  pointer-events: none;
+  white-space: pre;
+}
+
+.command-input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.16);
+}
+
+.command-palette button {
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--accent);
+  border-radius: 7px;
+  background: #171126;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.command-output {
+  grid-column: 2 / 4;
+  min-height: 1.4em;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 .tabs {
   display: flex;
   flex-wrap: wrap;
@@ -419,6 +508,18 @@ h1 {
 
   .profile {
     position: static;
+  }
+
+  .command-palette {
+    grid-template-columns: 1fr auto;
+  }
+
+  .command-label {
+    grid-column: 1 / 3;
+  }
+
+  .command-output {
+    grid-column: 1 / 3;
   }
 
   .item-heading {

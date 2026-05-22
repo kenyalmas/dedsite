@@ -168,7 +168,7 @@ func (s Store) EnsureDefaultSections() error {
 	}
 
 	if err := ensureItem(tx, "projects", Item{
-		Title:       "ATAK incorporated MaNet for autonomous drone coordination",
+		Title:       "MaNet for autonomous drone coordination",
 		Subtitle:    "Personal Work",
 		Period:      "2025 - ongoing",
 		Description: "Private communication network for autonomous drone coordination based off of 802.11ah standard. Purpose: gather greater understanding of protocol standards and RF communications troubleshooting.",

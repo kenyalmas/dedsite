@@ -5,7 +5,7 @@
 
   <div class="items">
     {{ range .Items }}
-      <article class="item">
+      <article class="item" data-search="{{ .Title }} {{ .Subtitle }} {{ .Period }} {{ .Description }} {{ .URL }} {{ range .Tags }} {{ . }}{{ end }}" data-tags="{{ range .Tags }}{{ . }} {{ end }}">
         <div class="item-heading">
           <div>
             <h3>{{ .Title }}</h3>
@@ -28,7 +28,7 @@
 
         {{ if .Tags }}
           <ul class="tags" aria-label="Technologies">
-            {{ range .Tags }}<li>{{ . }}</li>{{ end }}
+            {{ range .Tags }}<li data-tag="{{ . }}">{{ . }}</li>{{ end }}
           </ul>
         {{ end }}
       </article>
