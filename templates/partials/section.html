@@ -1,0 +1,39 @@
+{{ define "section.html" }}
+  <header class="section-header">
+    <h2>{{ .Title }}</h2>
+  </header>
+
+  <div class="items">
+    {{ range .Items }}
+      <article class="item">
+        <div class="item-heading">
+          <div>
+            <h3>{{ .Title }}</h3>
+            {{ if .Subtitle }}<p>{{ .Subtitle }}</p>{{ end }}
+          </div>
+          {{ if .Period }}<time>{{ .Period }}</time>{{ end }}
+        </div>
+
+        {{ if .ImageURL }}
+          <figure class="item-media">
+            <img src="{{ .ImageURL }}" alt="{{ .ImageAlt }}" loading="lazy">
+          </figure>
+        {{ end }}
+
+        {{ if .Description }}<p class="description">{{ .Description }}</p>{{ end }}
+
+        {{ if .URL }}
+          <a class="item-link" href="{{ .URL }}" target="_blank" rel="noreferrer">View project</a>
+        {{ end }}
+
+        {{ if .Tags }}
+          <ul class="tags" aria-label="Technologies">
+            {{ range .Tags }}<li>{{ . }}</li>{{ end }}
+          </ul>
+        {{ end }}
+      </article>
+    {{ else }}
+      <p class="empty">Add entries to this section in the SQLite database.</p>
+    {{ end }}
+  </div>
+{{ end }}

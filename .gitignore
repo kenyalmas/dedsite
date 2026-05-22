@@ -1,0 +1,37 @@
+# Go build output
+/bin/
+/build/
+/dist/
+.gocache/
+*.exe
+*.test
+*.out
+
+# Local database and generated SQLite files
+/data/*.db
+/data/*.sqlite
+/data/*.sqlite3
+/data/*-journal
+/data/*-wal
+/data/*-shm
+
+# Environment and local config
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs and coverage
+*.log
+coverage.txt
+coverage.out
+
+# Local project notes
+whitepaper.md

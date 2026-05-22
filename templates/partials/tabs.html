@@ -1,0 +1,15 @@
+{{ define "tabs.html" }}
+  <nav id="section-tabs" class="tabs" aria-label="Resume sections">
+    {{ range .Sections }}
+      <a
+        class="tab{{ if eq $.Active .Slug }} is-active{{ end }}"
+        href="/section/{{ .Slug }}"
+        hx-get="/section/{{ .Slug }}"
+        hx-target="#section-panel"
+        hx-push-url="true"
+      >
+        {{ .Title }}
+      </a>
+    {{ end }}
+  </nav>
+{{ end }}
