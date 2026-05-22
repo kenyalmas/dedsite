@@ -48,11 +48,49 @@ $env:ADDR=':8082'
 go run ./cmd/server
 ```
 
+You can also set the port and database path with flags:
+
+```powershell
+go run ./cmd/server --port 8082 --db data/site-dev.db
+```
+
+To start without seeding or syncing the default content:
+
+```powershell
+go run ./cmd/server --no-seed --db data/site-dev.db
+```
+
 ## Configuration
 
 `ADDR` sets the server listen address. The default is `:8080`.
 
 `DATABASE_PATH` sets the SQLite database path. The default is `data/site.db`.
+
+## CLI
+
+The server binary also includes a small CLI for inspecting local content:
+
+```powershell
+go run ./cmd/server cli seed
+go run ./cmd/server cli profile
+go run ./cmd/server cli sections
+go run ./cmd/server cli section projects
+```
+
+The CLI uses the same `DATABASE_PATH` setting as the web server, or the `--db` flag:
+
+```powershell
+go run ./cmd/server --db data/site-dev.db cli sections
+```
+
+Use `--json` for machine-readable output, and add `--pretty` when you want indented JSON:
+
+```powershell
+go run ./cmd/server --db data/site-dev.db cli --json profile
+go run ./cmd/server --db data/site-dev.db cli --json --pretty section projects
+```
+
+Global flags go before `cli`; CLI output flags go after `cli` and before the command.
 
 ## How Content Works
 
