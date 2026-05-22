@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin | Dedsite</title>
+  <link rel="stylesheet" href="/static/css/site.css?v=admin-1">
+</head>
+<body>
+  <div class="terminal admin-terminal">
+    <div class="terminal-bar" aria-label="Terminal window controls">
+      <span class="terminal-label"></span>
+      <div class="terminal-controls">
+        <a class="terminal-control is-close" href="/" aria-label="Return home">
+          <span aria-hidden="true"></span>
+        </a>
+        <span class="terminal-control is-minimize" aria-hidden="true"><span></span></span>
+        <span class="terminal-control is-maximize" aria-hidden="true"><span></span></span>
+      </div>
+    </div>
+
+    <main class="admin-shell">
+      <section class="admin-dashboard">
+        <div class="admin-panel">
+          <p class="detail-prompt">~/dedsite/admin $ dashboard</p>
+          <header class="dashboard-header">
+            <div>
+              <h1>Control Panel</h1>
+              <p class="summary">Logged in as {{ .User.Username }}. Keep the portfolio stocked without spelunking through seed files.</p>
+            </div>
+            <a class="contact" href="/">View site</a>
+          </header>
+
+          <div class="dashboard-stats" aria-label="Site stats">
+            <article>
+              <strong>{{ len .Site.Sections }}</strong>
+              <span>sections</span>
+            </article>
+            <article>
+              <strong>{{ .ItemCount }}</strong>
+              <span>entries</span>
+            </article>
+            <article>
+              <strong>{{ .TagCount }}</strong>
+              <span>tags</span>
+            </article>
+          </div>
+        </div>
+
+        <div class="admin-grid">
+          <section class="admin-panel">
+            <h2>Next Build</h2>
+            <p class="summary">Create forms for profile, section, and item edits. The database and auth shell are ready for it.</p>
+            <a class="item-link" href="/admin">Prepare {{ .NextAction }}</a>
+          </section>
+
+          <section class="admin-panel">
+            <h2>Current Sections</h2>
+            <ul class="admin-section-list">
+              {{ range .Site.Sections }}
+                <li>
+                  <span>{{ .Title }}</span>
+                  <strong>{{ len .Items }}</strong>
+                </li>
+              {{ end }}
+            </ul>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

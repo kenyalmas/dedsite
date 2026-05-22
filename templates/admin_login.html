@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Login | Dedsite</title>
+  <link rel="stylesheet" href="/static/css/site.css?v=admin-1">
+</head>
+<body>
+  <div class="terminal admin-terminal">
+    <div class="terminal-bar" aria-label="Terminal window controls">
+      <span class="terminal-label"></span>
+      <div class="terminal-controls">
+        <a class="terminal-control is-close" href="/" aria-label="Return home">
+          <span aria-hidden="true"></span>
+        </a>
+        <span class="terminal-control is-minimize" aria-hidden="true"><span></span></span>
+        <span class="terminal-control is-maximize" aria-hidden="true"><span></span></span>
+      </div>
+    </div>
+
+    <main class="admin-shell">
+      <form class="admin-form" method="post" action="/admin/login">
+        <p class="detail-prompt">~/dedsite $ sudo login</p>
+        <h1>admin login</h1>
+        {{ if .Error }}<p class="form-error">{{ .Error }}</p>{{ end }}
+
+        <label for="username">username</label>
+        <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+
+        <label for="password">password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+        <button type="submit">authenticate</button>
+      </form>
+    </main>
+  </div>
+</body>
+</html>

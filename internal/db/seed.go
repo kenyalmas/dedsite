@@ -3,6 +3,11 @@ package db
 import "database/sql"
 
 func (s Store) SeedDefaults() error {
+	// TODO: Replace the development default admin credentials before deploying.
+	if err := s.EnsureDefaultAdmin(); err != nil {
+		return err
+	}
+
 	var count int
 	if err := s.conn.QueryRow(`SELECT COUNT(*) FROM profile`).Scan(&count); err != nil {
 		return err
@@ -41,7 +46,7 @@ func (s Store) SeedDefaults() error {
 			items: []Item{
 				{
 					Slug:        "aas-hardware-software-support",
-					Title:       "Associates in Applied Science in Hardware & Software Support",
+					Title:       "AAS in Hardware & Software Support",
 					Subtitle:    "Sandhill Community College",
 					Period:      "2024 - 2026",
 					Description: "Graduate with honors.",
