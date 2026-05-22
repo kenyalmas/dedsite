@@ -134,9 +134,9 @@ func (s Store) EnsureDefaultSections() error {
 		WHERE id = 1
 	`,
 		"Kenneth Almas",
-		"Hacker | Hardware Enthusiast",
+		"Security Researcher | Hardware Enthusiast",
 		"kennethalmas232@gmail.com",
-		"I am a person of intrigue with a deep passion for electronics. I enjoy taking things apart & understanding how they work. I have a strong interest in security research, particularly in the realm of hardware and embedded systems. I am always eager to learn and explore new technologies, and I thrive on solving complex problems.",
+		"I am a person of intrigue. I enjoy taking things apart & understanding how they work. I have a strong interest in security research, particularly in IOT and embedded systems.",
 	); err != nil {
 		return err
 	}

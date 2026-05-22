@@ -4,22 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ .Profile.Name }} | {{ .Profile.Title }}</title>
-  <link rel="stylesheet" href="/static/css/site.css?v=terminal-1">
+  <link rel="stylesheet" href="/static/css/site.css?v=terminal-4">
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
   <script src="/static/js/command-palette.js?v=1" defer></script>
+  <script src="/static/js/terminal-buttons.js?v=3" defer></script>
 </head>
 <body>
   <div class="terminal">
     <div class="terminal-bar" aria-label="Terminal window controls">
       <span class="terminal-label"></span>
       <div class="terminal-controls">
-        <button class="terminal-control is-minimize" type="button" aria-label="Minimize">
+        <button class="terminal-control is-close" type="button" aria-label="Reconnect session" data-terminal-action="close">
           <span aria-hidden="true"></span>
         </button>
-        <button class="terminal-control is-maximize" type="button" aria-label="Maximize">
+        <button class="terminal-control is-minimize" type="button" aria-label="Minimize terminal" data-terminal-action="minimize">
           <span aria-hidden="true"></span>
         </button>
-        <button class="terminal-control is-close" type="button" aria-label="Close">
+        <button class="terminal-control is-maximize" type="button" aria-label="Toggle focus mode" data-terminal-action="maximize">
           <span aria-hidden="true"></span>
         </button>
       </div>

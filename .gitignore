@@ -35,3 +35,6 @@ coverage.out
 
 # Local project notes
 whitepaper.md
+
+# Local VS Code workspace
+dedsite.code-workspace
