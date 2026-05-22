@@ -14,6 +14,7 @@ type Section struct {
 }
 
 type Item struct {
+	Slug        string
 	Title       string
 	Subtitle    string
 	Period      string
@@ -21,6 +22,10 @@ type Item struct {
 	URL         string
 	ImageURL    string
 	ImageAlt    string
+	Problem     string
+	Built       string
+	Learned     string
+	TechStack   []string
 	Tags        []string
 }
 

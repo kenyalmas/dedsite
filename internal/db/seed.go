@@ -40,6 +40,7 @@ func (s Store) SeedDefaults() error {
 			title: "Experience",
 			items: []Item{
 				{
+					Slug:        "aas-hardware-software-support",
 					Title:       "Associates in Applied Science in Hardware & Software Support",
 					Subtitle:    "Sandhill Community College",
 					Period:      "2024 - 2026",
@@ -53,11 +54,16 @@ func (s Store) SeedDefaults() error {
 			title: "Projects",
 			items: []Item{
 				{
+					Slug:        "manet-autonomous-drone-coordination",
 					Title:       "MaNet for autonomous drone coordination",
 					Subtitle:    "Personal Work",
 					Period:      "2025 - ongoing",
 					Description: "Private communication network for autonomous drone coordination based off of 802.11ah standard. Purpose: gather greater understanding of protocol standards and RF communications troubleshooting.",
 					URL:         "[PRIVATE]",
+					Problem:     "Autonomous systems need a resilient local coordination layer that can keep nodes talking when normal infrastructure is unavailable, unreliable, or intentionally out of scope.",
+					Built:       "Designed a private mobile ad hoc network concept around 802.11ah constraints, mapped the coordination requirements, and documented RF troubleshooting paths for range, interference, and device discovery.",
+					Learned:     "The strongest lesson so far is that protocol work is equal parts standards reading, environmental testing, and failure-mode logging. RF behavior becomes easier to reason about when every assumption is tied to a measurement.",
+					TechStack:   []string{"802.11ah", "RF", "Networking", "Embedded Systems", "Go"},
 					Tags:        []string{"RF", "Networking"},
 				},
 			},
@@ -67,6 +73,7 @@ func (s Store) SeedDefaults() error {
 			title: "Security",
 			items: []Item{
 				{
+					Slug:        "ftcc-ncng-ctf-champion",
 					Title:       "FTCC X NCNG CTF Champion",
 					Description: "I was part of the team that won the 2026 FTCC X NCNG CTF, which featured a variety of challenges in areas such as reverse engineering, packet analysis, and cryptography.",
 					Tags:        []string{"CTF", "Security", "Networking"},
@@ -78,6 +85,7 @@ func (s Store) SeedDefaults() error {
 			title: "AI",
 			items: []Item{
 				{
+					Slug:        "ai-vision-research-program",
 					Title:       "AI Vision Research Program",
 					Description: "Trained visual AI models on custom datasets & Researched the capabilities of neural networks in limited resource environments.",
 					Tags:        []string{"Machine Learning", "AI Training"},
@@ -99,10 +107,11 @@ func (s Store) SeedDefaults() error {
 
 		for itemIndex, item := range section.items {
 			if _, err := tx.Exec(`
-				INSERT INTO items (section_id, title, subtitle, period, description, url, image_url, image_alt, tags, sort_order)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				INSERT INTO items (section_id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags, sort_order)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			`,
 				sectionID,
+				item.Slug,
 				item.Title,
 				item.Subtitle,
 				item.Period,
@@ -110,6 +119,10 @@ func (s Store) SeedDefaults() error {
 				item.URL,
 				item.ImageURL,
 				item.ImageAlt,
+				item.Problem,
+				item.Built,
+				item.Learned,
+				joinTags(item.TechStack),
 				joinTags(item.Tags),
 				itemIndex,
 			); err != nil {
@@ -158,6 +171,7 @@ func (s Store) EnsureDefaultSections() error {
 	}
 
 	if err := ensureItem(tx, "work", Item{
+		Slug:        "aas-hardware-software-support",
 		Title:       "Associates in Applied Science in Hardware & Software Support",
 		Subtitle:    "Sandhill Community College",
 		Period:      "2024 - 2026",
@@ -168,11 +182,16 @@ func (s Store) EnsureDefaultSections() error {
 	}
 
 	if err := ensureItem(tx, "projects", Item{
+		Slug:        "manet-autonomous-drone-coordination",
 		Title:       "MaNet for autonomous drone coordination",
 		Subtitle:    "Personal Work",
 		Period:      "2025 - ongoing",
 		Description: "Private communication network for autonomous drone coordination based off of 802.11ah standard. Purpose: gather greater understanding of protocol standards and RF communications troubleshooting.",
 		URL:         "[PRIVATE]",
+		Problem:     "Autonomous systems need a resilient local coordination layer that can keep nodes talking when normal infrastructure is unavailable, unreliable, or intentionally out of scope.",
+		Built:       "Designed a private mobile ad hoc network concept around 802.11ah constraints, mapped the coordination requirements, and documented RF troubleshooting paths for range, interference, and device discovery.",
+		Learned:     "The strongest lesson so far is that protocol work is equal parts standards reading, environmental testing, and failure-mode logging. RF behavior becomes easier to reason about when every assumption is tied to a measurement.",
+		TechStack:   []string{"802.11ah", "RF", "Networking", "Embedded Systems", "Go"},
 		Tags:        []string{"RF", "Networking"},
 	}, 0); err != nil {
 		return err
@@ -189,6 +208,7 @@ func (s Store) EnsureDefaultSections() error {
 			title:     "Security",
 			sortOrder: 2,
 			placeholder: Item{
+				Slug:        "ftcc-ncng-ctf-champion",
 				Title:       "FTCC X NCNG CTF Champion",
 				Description: "I was part of the team that won the 2026 FTCC X NCNG CTF, which featured a variety of challenges in areas such as reverse engineering, packet analysis, and cryptography.",
 				Tags:        []string{"CTF", "Security", "Networking"},
@@ -199,6 +219,7 @@ func (s Store) EnsureDefaultSections() error {
 			title:     "AI",
 			sortOrder: 3,
 			placeholder: Item{
+				Slug:        "ai-vision-research-program",
 				Title:       "AI Vision Research Program",
 				Description: "Trained visual AI models on custom datasets & Researched the capabilities of neural networks in limited resource environments.",
 				Tags:        []string{"Machine Learning", "AI Training"},
@@ -227,10 +248,11 @@ func (s Store) EnsureDefaultSections() error {
 		if itemCount == 0 {
 			item := section.placeholder
 			if _, err := tx.Exec(`
-				INSERT INTO items (section_id, title, subtitle, period, description, url, image_url, image_alt, tags, sort_order)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+				INSERT INTO items (section_id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags, sort_order)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
 			`,
 				sectionID,
+				item.Slug,
 				item.Title,
 				item.Subtitle,
 				item.Period,
@@ -238,6 +260,10 @@ func (s Store) EnsureDefaultSections() error {
 				item.URL,
 				item.ImageURL,
 				item.ImageAlt,
+				item.Problem,
+				item.Built,
+				item.Learned,
+				joinTags(item.TechStack),
 				joinTags(item.Tags),
 			); err != nil {
 				return err
@@ -268,14 +294,32 @@ func ensureItem(conn itemInserter, sectionSlug string, item Item, sortOrder int)
 		return err
 	}
 	if count > 0 {
+		_, err := conn.Exec(`
+			UPDATE items
+			SET slug = ?, problem = ?, built = ?, learned = ?, tech_stack = ?
+			WHERE section_id = ? AND title = ?
+		`,
+			item.Slug,
+			item.Problem,
+			item.Built,
+			item.Learned,
+			joinTags(item.TechStack),
+			sectionID,
+			item.Title,
+		)
+		return err
+	}
+
+	if item.Slug == "" {
 		return nil
 	}
 
 	_, err := conn.Exec(`
-		INSERT INTO items (section_id, title, subtitle, period, description, url, image_url, image_alt, tags, sort_order)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO items (section_id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags, sort_order)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		sectionID,
+		item.Slug,
 		item.Title,
 		item.Subtitle,
 		item.Period,
@@ -283,6 +327,10 @@ func ensureItem(conn itemInserter, sectionSlug string, item Item, sortOrder int)
 		item.URL,
 		item.ImageURL,
 		item.ImageAlt,
+		item.Problem,
+		item.Built,
+		item.Learned,
+		joinTags(item.TechStack),
 		joinTags(item.Tags),
 		sortOrder,
 	)

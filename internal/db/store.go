@@ -90,9 +90,49 @@ func (s Store) Section(slug string) (Section, error) {
 	return section, nil
 }
 
+func (s Store) Item(slug string) (Item, error) {
+	var item Item
+	var rawTags string
+	var rawTechStack string
+	var rawSlug sql.NullString
+	var rawProblem sql.NullString
+	var rawBuilt sql.NullString
+	var rawLearned sql.NullString
+	err := s.conn.QueryRow(`
+		SELECT slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
+		FROM items
+		WHERE slug = ?
+	`, slug).Scan(
+		&rawSlug,
+		&item.Title,
+		&item.Subtitle,
+		&item.Period,
+		&item.Description,
+		&item.URL,
+		&item.ImageURL,
+		&item.ImageAlt,
+		&rawProblem,
+		&rawBuilt,
+		&rawLearned,
+		&rawTechStack,
+		&rawTags,
+	)
+	if err != nil {
+		return Item{}, err
+	}
+
+	item.Slug = rawSlug.String
+	item.Problem = rawProblem.String
+	item.Built = rawBuilt.String
+	item.Learned = rawLearned.String
+	item.TechStack = splitTags(rawTechStack)
+	item.Tags = splitTags(rawTags)
+	return item, nil
+}
+
 func (s Store) items(sectionID int64) ([]Item, error) {
 	rows, err := s.conn.Query(`
-		SELECT title, subtitle, period, description, url, image_url, image_alt, tags
+		SELECT slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
 		FROM items
 		WHERE section_id = ?
 		ORDER BY sort_order, id
@@ -106,9 +146,33 @@ func (s Store) items(sectionID int64) ([]Item, error) {
 	for rows.Next() {
 		var item Item
 		var rawTags string
-		if err := rows.Scan(&item.Title, &item.Subtitle, &item.Period, &item.Description, &item.URL, &item.ImageURL, &item.ImageAlt, &rawTags); err != nil {
+		var rawTechStack string
+		var rawSlug sql.NullString
+		var rawProblem sql.NullString
+		var rawBuilt sql.NullString
+		var rawLearned sql.NullString
+		if err := rows.Scan(
+			&rawSlug,
+			&item.Title,
+			&item.Subtitle,
+			&item.Period,
+			&item.Description,
+			&item.URL,
+			&item.ImageURL,
+			&item.ImageAlt,
+			&rawProblem,
+			&rawBuilt,
+			&rawLearned,
+			&rawTechStack,
+			&rawTags,
+		); err != nil {
 			return nil, err
 		}
+		item.Slug = rawSlug.String
+		item.Problem = rawProblem.String
+		item.Built = rawBuilt.String
+		item.Learned = rawLearned.String
+		item.TechStack = splitTags(rawTechStack)
 		item.Tags = splitTags(rawTags)
 		items = append(items, item)
 	}

@@ -29,6 +29,11 @@ func Migrate(conn *sql.DB) error {
 			url TEXT NOT NULL DEFAULT '',
 			image_url TEXT NOT NULL DEFAULT '',
 			image_alt TEXT NOT NULL DEFAULT '',
+			slug TEXT DEFAULT '',
+			problem TEXT DEFAULT '',
+			built TEXT DEFAULT '',
+			learned TEXT DEFAULT '',
+			tech_stack TEXT DEFAULT '',
 			tags TEXT NOT NULL DEFAULT '',
 			sort_order INTEGER NOT NULL DEFAULT 0
 		);`,
@@ -45,6 +50,21 @@ func Migrate(conn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumn(conn, "items", "image_alt", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+	if err := ensureColumn(conn, "items", "slug", "TEXT DEFAULT ''"); err != nil {
+		return err
+	}
+	if err := ensureColumn(conn, "items", "problem", "TEXT DEFAULT ''"); err != nil {
+		return err
+	}
+	if err := ensureColumn(conn, "items", "built", "TEXT DEFAULT ''"); err != nil {
+		return err
+	}
+	if err := ensureColumn(conn, "items", "learned", "TEXT DEFAULT ''"); err != nil {
+		return err
+	}
+	if err := ensureColumn(conn, "items", "tech_stack", "TEXT DEFAULT ''"); err != nil {
 		return err
 	}
 	if err := dropProfileLocation(conn); err != nil {

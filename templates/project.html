@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ .Item.Title }} | {{ .Site.Profile.Name }}</title>
+  <link rel="stylesheet" href="/static/css/site.css?v=detail-1">
+  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+  <script src="/static/js/command-palette.js?v=1" defer></script>
+  <script src="/static/js/terminal-buttons.js?v=3" defer></script>
+</head>
+<body>
+  <div class="terminal">
+    <div class="terminal-bar" aria-label="Terminal window controls">
+      <span class="terminal-label"></span>
+      <div class="terminal-controls">
+        <button class="terminal-control is-close" type="button" aria-label="Return home" data-terminal-action="close" data-terminal-href="/">
+          <span aria-hidden="true"></span>
+        </button>
+        <button class="terminal-control is-minimize" type="button" aria-label="Minimize terminal" data-terminal-action="minimize">
+          <span aria-hidden="true"></span>
+        </button>
+        <button class="terminal-control is-maximize" type="button" aria-label="Toggle focus mode" data-terminal-action="maximize">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+
+    <main class="shell detail-shell">
+      <aside class="profile" aria-label="Profile">
+        <img class="profile-avatar" src="https://avatars.githubusercontent.com/u/76697000?v=4&size=256" alt="GitHub profile picture for kenyalmas">
+        <h1>{{ .Site.Profile.Name }}</h1>
+        <p class="title">{{ .Site.Profile.Title }}</p>
+        <p class="summary">{{ .Site.Profile.Summary }}</p>
+        <div class="contact-list" aria-label="Contact links">
+          <a class="contact" href="/">Back home</a>
+          <a class="contact" href="mailto:{{ .Site.Profile.Email }}">{{ .Site.Profile.Email }}</a>
+        </div>
+      </aside>
+
+      <section class="portfolio project-detail" aria-label="Project detail">
+        <p class="detail-prompt">~/resume/projects $ cat {{ .Item.Slug }}</p>
+        <article class="detail-card">
+          <header class="detail-header">
+            <div>
+              <h2>{{ .Item.Title }}</h2>
+              {{ if .Item.Subtitle }}<p>{{ .Item.Subtitle }}</p>{{ end }}
+            </div>
+            {{ if .Item.Period }}<time>{{ .Item.Period }}</time>{{ end }}
+          </header>
+
+          {{ if .Item.Description }}<p class="description">{{ .Item.Description }}</p>{{ end }}
+
+          {{ if .Item.ImageURL }}
+            <figure class="item-media">
+              <img src="{{ .Item.ImageURL }}" alt="{{ .Item.ImageAlt }}" loading="lazy">
+            </figure>
+          {{ end }}
+
+          <section class="detail-block">
+            <h3>Tech Stack</h3>
+            {{ if .Item.TechStack }}
+              <ul class="tags" aria-label="Tech stack">
+                {{ range .Item.TechStack }}<li>{{ . }}</li>{{ end }}
+              </ul>
+            {{ else }}
+              <p class="placeholder">Stack trace pending: probably caffeine, curiosity, and one suspicious adapter.</p>
+            {{ end }}
+          </section>
+
+          <section class="detail-block">
+            <h3>Problem</h3>
+            {{ if .Item.Problem }}
+              <p>{{ .Item.Problem }}</p>
+            {{ else }}
+              <p class="placeholder">Problem statement is still negotiating with reality.</p>
+            {{ end }}
+          </section>
+
+          <section class="detail-block">
+            <h3>What I Built</h3>
+            {{ if .Item.Built }}
+              <p>{{ .Item.Built }}</p>
+            {{ else }}
+              <p class="placeholder">Build log empty: no smoke released from the hardware yet.</p>
+            {{ end }}
+          </section>
+
+          <section class="detail-block">
+            <h3>What I Learned</h3>
+            {{ if .Item.Learned }}
+              <p>{{ .Item.Learned }}</p>
+            {{ else }}
+              <p class="placeholder">Lessons are buffering; check back after the next weird failure mode.</p>
+            {{ end }}
+          </section>
+
+          <div class="detail-actions">
+            <a class="item-link" href="/section/projects">Back to projects</a>
+            {{ if and .Item.URL (ne .Item.URL "[PRIVATE]") }}<a class="item-link" href="{{ .Item.URL }}" target="_blank" rel="noreferrer">Project link</a>{{ end }}
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

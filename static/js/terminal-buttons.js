@@ -80,6 +80,11 @@
 
     const action = button.getAttribute("data-terminal-action");
     if (action === "close") {
+      const href = button.getAttribute("data-terminal-href");
+      if (href) {
+        window.location.href = href;
+        return;
+      }
       reconnect();
     }
     if (action === "minimize") {

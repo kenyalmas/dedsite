@@ -22,8 +22,12 @@
 
         {{ if .Description }}<p class="description">{{ .Description }}</p>{{ end }}
 
-        {{ if .URL }}
+        {{ if and .URL (ne .URL "[PRIVATE]") }}
           <a class="item-link" href="{{ .URL }}" target="_blank" rel="noreferrer">View project</a>
+        {{ end }}
+
+        {{ if and .Slug (eq $.Slug "projects") }}
+          <a class="item-link detail-link" href="/project/{{ .Slug }}">Open details</a>
         {{ end }}
 
         {{ if .Tags }}

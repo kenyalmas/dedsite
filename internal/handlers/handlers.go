@@ -19,6 +19,11 @@ type SectionResponse struct {
 	Section db.Section
 }
 
+type ProjectPage struct {
+	Site db.Site
+	Item db.Item
+}
+
 func New(store db.Store, templates *template.Template) Handler {
 	return Handler{
 		store:     store,
@@ -69,6 +74,30 @@ func (h Handler) Section(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.render(w, "home.html", site)
+}
+
+func (h Handler) Project(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	item, err := h.store.Item(slug)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.NotFound(w, r)
+			return
+		}
+		http.Error(w, "Could not load project", http.StatusInternalServerError)
+		return
+	}
+
+	site, err := h.store.Site("projects")
+	if err != nil {
+		http.Error(w, "Could not load site", http.StatusInternalServerError)
+		return
+	}
+
+	h.render(w, "project.html", ProjectPage{
+		Site: site,
+		Item: item,
+	})
 }
 
 func (h Handler) render(w http.ResponseWriter, name string, data any) {
