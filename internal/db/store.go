@@ -90,6 +90,40 @@ func (s Store) Section(slug string) (Section, error) {
 	return section, nil
 }
 
+func (s Store) AddItem(sectionSlug string, item Item) error {
+	var sectionID int64
+	if err := s.conn.QueryRow(`SELECT id FROM sections WHERE slug = ?`, sectionSlug).Scan(&sectionID); err != nil {
+		return err
+	}
+
+	var sortOrder int
+	if err := s.conn.QueryRow(`SELECT COALESCE(MAX(sort_order), -1) + 1 FROM items WHERE section_id = ?`, sectionID).Scan(&sortOrder); err != nil {
+		return err
+	}
+
+	_, err := s.conn.Exec(`
+		INSERT INTO items (section_id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags, sort_order)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`,
+		sectionID,
+		item.Slug,
+		item.Title,
+		item.Subtitle,
+		item.Period,
+		item.Description,
+		item.URL,
+		item.ImageURL,
+		item.ImageAlt,
+		item.Problem,
+		item.Built,
+		item.Learned,
+		joinValues(item.TechStack),
+		joinValues(item.Tags),
+		sortOrder,
+	)
+	return err
+}
+
 func (s Store) Item(slug string) (Item, error) {
 	var item Item
 	var rawTags string
@@ -195,4 +229,15 @@ func splitTags(raw string) []string {
 		}
 	}
 	return tags
+}
+
+func joinValues(values []string) string {
+	clean := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			clean = append(clean, value)
+		}
+	}
+	return strings.Join(clean, ",")
 }

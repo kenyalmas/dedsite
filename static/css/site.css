@@ -780,13 +780,50 @@ h1 {
   color: var(--terminal-cyan);
 }
 
+.section-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.section-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--accent);
+  border-radius: 7px;
+  background: #171126;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  text-align: center;
+}
+
+.section-actions button::before {
+  margin-right: 6px;
+  color: var(--terminal-green);
+  content: "+";
+}
+
+.section-actions button:hover,
+.section-actions button:focus-visible {
+  background: rgba(103, 232, 249, 0.12);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.16);
+}
+
 .admin-form h1,
 .admin-panel h1 {
   margin-bottom: 18px;
   color: var(--accent-strong);
 }
 
-.admin-form label {
+.admin-form label,
+.entry-form label {
   display: block;
   margin: 16px 0 6px;
   color: var(--terminal-green);
@@ -794,7 +831,9 @@ h1 {
   font-weight: 800;
 }
 
-.admin-form input {
+.admin-form input,
+.entry-form input,
+.entry-form textarea {
   width: 100%;
   min-height: 44px;
   padding: 0 12px;
@@ -807,12 +846,21 @@ h1 {
   outline: none;
 }
 
-.admin-form input:focus {
+.entry-form textarea {
+  min-height: 96px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.admin-form input:focus,
+.entry-form input:focus,
+.entry-form textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.16);
 }
 
-.admin-form button {
+.admin-form button,
+.entry-form button {
   width: 100%;
   min-height: 44px;
   margin-top: 22px;
@@ -825,12 +873,36 @@ h1 {
   font-weight: 800;
 }
 
+.entry-form {
+  margin-top: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 14px;
+}
+
+.form-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .form-error {
   padding: 10px 12px;
   border: 1px solid rgba(251, 113, 133, 0.72);
   border-radius: 7px;
   background: rgba(251, 113, 133, 0.12);
   color: #fecdd3;
+}
+
+.form-success {
+  padding: 10px 12px;
+  border: 1px solid rgba(140, 255, 186, 0.72);
+  border-radius: 7px;
+  background: rgba(140, 255, 186, 0.1);
+  color: var(--terminal-green);
 }
 
 @media (max-width: 760px) {
@@ -888,6 +960,15 @@ h1 {
   }
 
   .dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .section-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid,
+  .form-actions {
     grid-template-columns: 1fr;
   }
 }

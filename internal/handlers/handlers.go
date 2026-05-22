@@ -5,6 +5,7 @@ import (
 	"errors"
 	"html/template"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -31,12 +32,20 @@ type LoginPage struct {
 }
 
 type AdminPage struct {
-	User       db.AdminUser
-	Site       db.Site
-	ItemCount  int
-	TagCount   int
-	NextAction string
+	User      db.AdminUser
+	Site      db.Site
+	ItemCount int
+	TagCount  int
 }
+
+type EntryFormPage struct {
+	Section db.Section
+	Item    db.Item
+	Error   string
+	Success string
+}
+
+var slugPattern = regexp.MustCompile(`[^a-z0-9]+`)
 
 func New(store db.Store, templates *template.Template) Handler {
 	return Handler{
@@ -174,11 +183,80 @@ func (h Handler) Admin(w http.ResponseWriter, r *http.Request) {
 
 	itemCount, tagCount := adminCounts(site)
 	h.render(w, "admin.html", AdminPage{
-		User:       user,
-		Site:       site,
-		ItemCount:  itemCount,
-		TagCount:   tagCount,
-		NextAction: "entry forms",
+		User:      user,
+		Site:      site,
+		ItemCount: itemCount,
+		TagCount:  tagCount,
+	})
+}
+
+func (h Handler) AdminEntryForm(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+
+	section, err := h.store.Section(r.PathValue("slug"))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.NotFound(w, r)
+			return
+		}
+		http.Error(w, "Could not load section", http.StatusInternalServerError)
+		return
+	}
+
+	h.render(w, "admin_entry_form.html", EntryFormPage{Section: section})
+}
+
+func (h Handler) AdminCreateEntry(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+
+	section, err := h.store.Section(r.PathValue("slug"))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.NotFound(w, r)
+			return
+		}
+		http.Error(w, "Could not load section", http.StatusInternalServerError)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not read entry form", http.StatusBadRequest)
+		return
+	}
+
+	item := itemFromForm(r)
+	if item.Title == "" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		h.render(w, "admin_entry_form.html", EntryFormPage{
+			Section: section,
+			Item:    item,
+			Error:   "title is required",
+		})
+		return
+	}
+
+	if item.Slug == "" {
+		item.Slug = slugify(item.Title)
+	}
+
+	if err := h.store.AddItem(section.Slug, item); err != nil {
+		http.Error(w, "Could not save entry", http.StatusInternalServerError)
+		return
+	}
+
+	section, err = h.store.Section(section.Slug)
+	if err != nil {
+		http.Error(w, "Could not reload section", http.StatusInternalServerError)
+		return
+	}
+
+	h.render(w, "admin_entry_form.html", EntryFormPage{
+		Section: section,
+		Success: "entry added to " + section.Title,
 	})
 }
 
@@ -194,6 +272,20 @@ func (h Handler) currentAdmin(r *http.Request) (db.AdminUser, bool, error) {
 	return h.store.AdminUserForSession(cookie.Value)
 }
 
+func (h Handler) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
+	_, ok, err := h.currentAdmin(r)
+	if err != nil {
+		http.Error(w, "Could not read session", http.StatusInternalServerError)
+		return false
+	}
+	if !ok {
+		w.Header().Set("HX-Redirect", "/admin/login")
+		http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
+		return false
+	}
+	return true
+}
+
 func adminCounts(site db.Site) (int, int) {
 	itemCount := 0
 	tags := map[string]bool{}
@@ -206,6 +298,42 @@ func adminCounts(site db.Site) (int, int) {
 		}
 	}
 	return itemCount, len(tags)
+}
+
+func itemFromForm(r *http.Request) db.Item {
+	return db.Item{
+		Slug:        strings.TrimSpace(r.FormValue("slug")),
+		Title:       strings.TrimSpace(r.FormValue("title")),
+		Subtitle:    strings.TrimSpace(r.FormValue("subtitle")),
+		Period:      strings.TrimSpace(r.FormValue("period")),
+		Description: strings.TrimSpace(r.FormValue("description")),
+		URL:         strings.TrimSpace(r.FormValue("url")),
+		ImageURL:    strings.TrimSpace(r.FormValue("image_url")),
+		ImageAlt:    strings.TrimSpace(r.FormValue("image_alt")),
+		Problem:     strings.TrimSpace(r.FormValue("problem")),
+		Built:       strings.TrimSpace(r.FormValue("built")),
+		Learned:     strings.TrimSpace(r.FormValue("learned")),
+		TechStack:   splitCSV(r.FormValue("tech_stack")),
+		Tags:        splitCSV(r.FormValue("tags")),
+	}
+}
+
+func splitCSV(raw string) []string {
+	parts := strings.Split(raw, ",")
+	values := make([]string, 0, len(parts))
+	for _, part := range parts {
+		value := strings.TrimSpace(part)
+		if value != "" {
+			values = append(values, value)
+		}
+	}
+	return values
+}
+
+func slugify(value string) string {
+	slug := strings.ToLower(strings.TrimSpace(value))
+	slug = slugPattern.ReplaceAllString(slug, "-")
+	return strings.Trim(slug, "-")
 }
 
 func (h Handler) render(w http.ResponseWriter, name string, data any) {

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Admin | Dedsite</title>
   <link rel="stylesheet" href="/static/css/site.css?v=admin-1">
+  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
 </head>
 <body>
   <div class="terminal admin-terminal">
@@ -48,10 +49,21 @@
         </div>
 
         <div class="admin-grid">
-          <section class="admin-panel">
-            <h2>Next Build</h2>
-            <p class="summary">Create forms for profile, section, and item edits. The database and auth shell are ready for it.</p>
-            <a class="item-link" href="/admin">Prepare {{ .NextAction }}</a>
+          <section id="entry-manager" class="admin-panel">
+            <h2>Manage Entries</h2>
+            <p class="summary">Jump into a section-specific form to add portfolio entries without editing seed data.</p>
+            <div class="section-actions" aria-label="Entry forms by section">
+              {{ range .Site.Sections }}
+                <button
+                  type="button"
+                  hx-get="/admin/sections/{{ .Slug }}/entries/new"
+                  hx-target="#entry-manager"
+                  hx-swap="outerHTML"
+                >
+                  {{ .Title }}
+                </button>
+              {{ end }}
+            </div>
           </section>
 
           <section class="admin-panel">

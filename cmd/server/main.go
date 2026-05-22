@@ -128,6 +128,8 @@ func serve(options options) error {
 	mux.HandleFunc("GET /admin", app.Admin)
 	mux.HandleFunc("GET /admin/login", app.AdminLogin)
 	mux.HandleFunc("POST /admin/login", app.AdminLogin)
+	mux.HandleFunc("GET /admin/sections/{slug}/entries/new", app.AdminEntryForm)
+	mux.HandleFunc("POST /admin/sections/{slug}/entries", app.AdminCreateEntry)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	server := &http.Server{
