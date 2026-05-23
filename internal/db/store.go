@@ -90,6 +90,116 @@ func (s Store) Section(slug string) (Section, error) {
 	return section, nil
 }
 
+func (s Store) AddItem(sectionSlug string, item Item) error {
+	var sectionID int64
+	if err := s.conn.QueryRow(`SELECT id FROM sections WHERE slug = ?`, sectionSlug).Scan(&sectionID); err != nil {
+		return err
+	}
+
+	var sortOrder int
+	if err := s.conn.QueryRow(`SELECT COALESCE(MAX(sort_order), -1) + 1 FROM items WHERE section_id = ?`, sectionID).Scan(&sortOrder); err != nil {
+		return err
+	}
+
+	_, err := s.conn.Exec(`
+		INSERT INTO items (section_id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags, sort_order)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`,
+		sectionID,
+		item.Slug,
+		item.Title,
+		item.Subtitle,
+		item.Period,
+		item.Description,
+		item.URL,
+		item.ImageURL,
+		item.ImageAlt,
+		item.Problem,
+		item.Built,
+		item.Learned,
+		joinValues(item.TechStack),
+		joinValues(item.Tags),
+		sortOrder,
+	)
+	return err
+}
+
+func (s Store) UpdateItem(sectionSlug string, item Item) error {
+	var sectionID int64
+	if err := s.conn.QueryRow(`SELECT id FROM sections WHERE slug = ?`, sectionSlug).Scan(&sectionID); err != nil {
+		return err
+	}
+
+	_, err := s.conn.Exec(`
+		UPDATE items
+		SET slug = ?, title = ?, subtitle = ?, period = ?, description = ?, url = ?, image_url = ?, image_alt = ?, problem = ?, built = ?, learned = ?, tech_stack = ?, tags = ?
+		WHERE id = ? AND section_id = ?
+	`,
+		item.Slug,
+		item.Title,
+		item.Subtitle,
+		item.Period,
+		item.Description,
+		item.URL,
+		item.ImageURL,
+		item.ImageAlt,
+		item.Problem,
+		item.Built,
+		item.Learned,
+		joinValues(item.TechStack),
+		joinValues(item.Tags),
+		item.ID,
+		sectionID,
+	)
+	return err
+}
+
+func (s Store) DeleteItem(id int64) error {
+	_, err := s.conn.Exec(`DELETE FROM items WHERE id = ?`, id)
+	return err
+}
+
+func (s Store) ItemByID(id int64) (Item, error) {
+	var item Item
+	var rawTags string
+	var rawTechStack string
+	var rawSlug sql.NullString
+	var rawProblem sql.NullString
+	var rawBuilt sql.NullString
+	var rawLearned sql.NullString
+	err := s.conn.QueryRow(`
+		SELECT id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
+		FROM items
+		WHERE id = ?
+	`, id).Scan(
+		&item.ID,
+		&rawSlug,
+		&item.Title,
+		&item.Subtitle,
+		&item.Period,
+		&item.Description,
+		&item.URL,
+		&item.ImageURL,
+		&item.ImageAlt,
+		&rawProblem,
+		&rawBuilt,
+		&rawLearned,
+		&rawTechStack,
+		&rawTags,
+	)
+	if err != nil {
+		return Item{}, err
+	}
+
+	item.Slug = rawSlug.String
+	item.Problem = rawProblem.String
+	item.Built = rawBuilt.String
+	item.Learned = rawLearned.String
+	item.TechStack = splitTags(rawTechStack)
+	item.Tags = splitTags(rawTags)
+	return item, nil
+}
+
 func (s Store) Item(slug string) (Item, error) {
 	var item Item
 	var rawTags string
@@ -132,7 +242,7 @@ func (s Store) Item(slug string) (Item, error) {
 
 func (s Store) items(sectionID int64) ([]Item, error) {
 	rows, err := s.conn.Query(`
-		SELECT slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
+		SELECT id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
 		FROM items
 		WHERE section_id = ?
 		ORDER BY sort_order, id
@@ -152,6 +262,7 @@ func (s Store) items(sectionID int64) ([]Item, error) {
 		var rawBuilt sql.NullString
 		var rawLearned sql.NullString
 		if err := rows.Scan(
+			&item.ID,
 			&rawSlug,
 			&item.Title,
 			&item.Subtitle,
@@ -195,4 +306,15 @@ func splitTags(raw string) []string {
 		}
 	}
 	return tags
+}
+
+func joinValues(values []string) string {
+	clean := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			clean = append(clean, value)
+		}
+	}
+	return strings.Join(clean, ",")
 }

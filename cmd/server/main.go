@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"dedsite/internal/db"
@@ -34,7 +35,7 @@ func main() {
 	}
 
 	if len(args) > 0 && args[0] != "serve" {
-		log.Fatalf("unknown command %q\nusage: dedsite [--port port] [--db path] [--no-seed] [serve] | dedsite [--db path] [--no-seed] cli [--json] [--pretty] <profile|sections|section|seed>", args[0])
+		log.Fatalf("unknown command %q\nusage: dedsite [--port port] [--db path] [--no-seed] [serve] | dedsite [--db path] [--no-seed] cli [--json] [--pretty] <profile|sections|section|seed|admin>", args[0])
 	}
 
 	if err := serve(options); err != nil {
@@ -51,6 +52,11 @@ type options struct {
 type cliOptions struct {
 	json   bool
 	pretty bool
+}
+
+type adminCLIOptions struct {
+	username string
+	password string
 }
 
 func parseOptions(args []string) (options, []string, error) {
@@ -83,6 +89,34 @@ func parseCLIOptions(args []string) (cliOptions, []string, error) {
 		return cliOptions{}, nil, err
 	}
 	return values, flags.Args(), nil
+}
+
+func parseAdminCLIOptions(args []string) (adminCLIOptions, error) {
+	values := adminCLIOptions{}
+
+	flags := flag.NewFlagSet("dedsite cli admin", flag.ContinueOnError)
+	flags.StringVar(&values.username, "username", "", "admin username")
+	flags.StringVar(&values.password, "password", "", "admin password")
+
+	if err := flags.Parse(args); err != nil {
+		return adminCLIOptions{}, err
+	}
+	if flags.NArg() > 0 {
+		return adminCLIOptions{}, fmt.Errorf("unexpected admin argument %q", flags.Arg(0))
+	}
+
+	values.username = strings.TrimSpace(values.username)
+	if values.username == "" || values.password == "" {
+		return adminCLIOptions{}, errors.New("usage: dedsite cli admin --username <username> --password <password>")
+	}
+	if strings.EqualFold(values.username, "admin") && values.password == "password" {
+		return adminCLIOptions{}, errors.New("refusing insecure default admin credentials")
+	}
+	if len(values.password) < 12 {
+		return adminCLIOptions{}, errors.New("admin password must be at least 12 characters")
+	}
+
+	return values, nil
 }
 
 func normalizeAddr(value string) string {
@@ -125,6 +159,15 @@ func serve(options options) error {
 	mux.HandleFunc("GET /", app.Home)
 	mux.HandleFunc("GET /section/{slug}", app.Section)
 	mux.HandleFunc("GET /project/{slug}", app.Project)
+	mux.HandleFunc("GET /admin", app.Admin)
+	mux.HandleFunc("GET /admin/login", app.AdminLogin)
+	mux.HandleFunc("POST /admin/login", app.AdminLogin)
+	mux.HandleFunc("POST /admin/logout", app.AdminLogout)
+	mux.HandleFunc("GET /admin/sections/{slug}/entries/new", app.AdminEntryForm)
+	mux.HandleFunc("GET /admin/sections/{slug}/entries/{id}/edit", app.AdminEditEntryForm)
+	mux.HandleFunc("POST /admin/sections/{slug}/entries", app.AdminCreateEntry)
+	mux.HandleFunc("POST /admin/sections/{slug}/entries/{id}", app.AdminUpdateEntry)
+	mux.HandleFunc("DELETE /admin/items/{id}", app.AdminDeleteEntry)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	server := &http.Server{
@@ -156,7 +199,7 @@ func runCLI(options options, args []string) error {
 	}
 
 	if len(args) == 0 {
-		return errors.New("usage: dedsite cli [--json] [--pretty] <profile|sections|section|seed>")
+		return errors.New("usage: dedsite cli [--json] [--pretty] <profile|sections|section|seed|admin>")
 	}
 
 	conn, err := openStore(options.dbPath)
@@ -168,6 +211,15 @@ func runCLI(options options, args []string) error {
 	store := db.NewStore(conn)
 
 	switch args[0] {
+	case "admin":
+		admin, err := parseAdminCLIOptions(args[1:])
+		if err != nil {
+			return err
+		}
+		if err := store.SetAdminPassword(admin.username, admin.password); err != nil {
+			return fmt.Errorf("set admin password: %w", err)
+		}
+		return printValue(cli, map[string]string{"status": "admin credentials saved", "username": admin.username})
 	case "seed":
 		if options.noSeed {
 			return printValue(cli, map[string]string{"status": "seed skipped"})

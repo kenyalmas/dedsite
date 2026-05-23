@@ -1,0 +1,92 @@
+{{ define "admin_entry_form.html" }}
+  <section id="entry-manager" class="admin-panel">
+    <h2>{{ if .IsEdit }}Edit{{ else }}Add{{ end }} {{ .Section.Title }} Entry</h2>
+    {{ if .Error }}<p class="form-error">{{ .Error }}</p>{{ end }}
+    {{ if .Success }}<p class="form-success">{{ .Success }}</p>{{ end }}
+
+    <form
+      class="entry-form"
+      method="post"
+      action="{{ if .IsEdit }}/admin/sections/{{ .Section.Slug }}/entries/{{ .Item.ID }}{{ else }}/admin/sections/{{ .Section.Slug }}/entries{{ end }}"
+      hx-post="{{ if .IsEdit }}/admin/sections/{{ .Section.Slug }}/entries/{{ .Item.ID }}{{ else }}/admin/sections/{{ .Section.Slug }}/entries{{ end }}"
+      hx-target="#entry-manager"
+      hx-swap="outerHTML"
+    >
+      <input name="csrf_token" type="hidden" value="{{ .CSRFToken }}">
+      <div class="form-grid">
+        <label>
+          title
+          <input name="title" type="text" value="{{ .Item.Title }}" required>
+        </label>
+        <label>
+          slug
+          <input name="slug" type="text" value="{{ .Item.Slug }}" placeholder="auto-from-title">
+        </label>
+        <label>
+          subtitle
+          <input name="subtitle" type="text" value="{{ .Item.Subtitle }}">
+        </label>
+        <label>
+          period
+          <input name="period" type="text" value="{{ .Item.Period }}" placeholder="2026 - ongoing">
+        </label>
+      </div>
+
+      <label>
+        description
+        <textarea name="description" rows="4">{{ .Item.Description }}</textarea>
+      </label>
+
+      <div class="form-grid">
+        <label>
+          URL
+          <input name="url" type="url" value="{{ .Item.URL }}">
+        </label>
+        <label>
+          tags
+          <input name="tags" type="text" value="{{ range $index, $tag := .Item.Tags }}{{ if $index }}, {{ end }}{{ $tag }}{{ end }}" placeholder="Go, Security, RF">
+        </label>
+        <label>
+          image URL
+          <input name="image_url" type="url" value="{{ .Item.ImageURL }}">
+        </label>
+        <label>
+          image alt
+          <input name="image_alt" type="text" value="{{ .Item.ImageAlt }}">
+        </label>
+      </div>
+
+      {{ if eq .Section.Slug "projects" }}
+        <label>
+          tech stack
+          <input name="tech_stack" type="text" value="{{ range $index, $tag := .Item.TechStack }}{{ if $index }}, {{ end }}{{ $tag }}{{ end }}" placeholder="Go, SQLite, HTMX">
+        </label>
+        <label>
+          problem
+          <textarea name="problem" rows="3">{{ .Item.Problem }}</textarea>
+        </label>
+        <label>
+          what was built
+          <textarea name="built" rows="3">{{ .Item.Built }}</textarea>
+        </label>
+        <label>
+          what was learned
+          <textarea name="learned" rows="3">{{ .Item.Learned }}</textarea>
+        </label>
+      {{ end }}
+
+      <div class="form-actions">
+        <button type="submit">{{ if .IsEdit }}update entry{{ else }}save entry{{ end }}</button>
+        <button
+          type="button"
+          hx-get="/admin"
+          hx-select="#entry-manager"
+          hx-target="#entry-manager"
+          hx-swap="outerHTML"
+        >
+          cancel
+        </button>
+      </div>
+    </form>
+  </section>
+{{ end }}

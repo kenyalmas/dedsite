@@ -41,7 +41,7 @@ func (s Store) SeedDefaults() error {
 			items: []Item{
 				{
 					Slug:        "aas-hardware-software-support",
-					Title:       "Associates in Applied Science in Hardware & Software Support",
+					Title:       "AAS in Hardware & Software Support",
 					Subtitle:    "Sandhill Community College",
 					Period:      "2024 - 2026",
 					Description: "Graduate with honors.",

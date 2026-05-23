@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin | Dedsite</title>
+  <link rel="stylesheet" href="/static/css/site.css?v=admin-1">
+  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+</head>
+<body>
+  <div class="terminal admin-terminal">
+    <div class="terminal-bar" aria-label="Terminal window controls">
+      <div class="terminal-controls">
+        <a class="terminal-control is-close" href="/" aria-label="Return home">
+          <span aria-hidden="true"></span>
+        </a>
+        <span class="terminal-control is-minimize" aria-hidden="true"><span></span></span>
+        <span class="terminal-control is-maximize" aria-hidden="true"><span></span></span>
+      </div>
+    </div>
+
+    <main class="admin-shell">
+      <section class="admin-dashboard">
+        <div class="admin-panel">
+          <p class="detail-prompt">~/dedsite/admin $ dashboard</p>
+          <header class="dashboard-header">
+            <div>
+              <h1>Control Panel</h1>
+            </div>
+            <div class="dashboard-actions">
+              <a class="contact" href="/">View site</a>
+              <form method="post" action="/admin/logout">
+                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+                <button class="contact" type="submit">Log out</button>
+              </form>
+            </div>
+          </header>
+        </div>
+
+        <div class="admin-grid">
+          <section id="entry-manager" class="admin-panel">
+            <h2>Manage Entries</h2>
+            <div class="section-actions" aria-label="Entry forms by section">
+              {{ range .Site.Sections }}
+                <button
+                  type="button"
+                  hx-get="/admin/sections/{{ .Slug }}/entries/new"
+                  hx-target="#entry-manager"
+                  hx-swap="outerHTML"
+                >
+                  {{ .Title }}
+                </button>
+              {{ end }}
+            </div>
+          </section>
+
+          <section class="admin-panel">
+            <h2>Current Sections</h2>
+            {{ template "admin_sections_list.html" . }}
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

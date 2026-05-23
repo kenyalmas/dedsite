@@ -37,6 +37,20 @@ func Migrate(conn *sql.DB) error {
 			tags TEXT NOT NULL DEFAULT '',
 			sort_order INTEGER NOT NULL DEFAULT 0
 		);`,
+		`CREATE TABLE IF NOT EXISTS admin_users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			username TEXT NOT NULL UNIQUE,
+			password_hash TEXT NOT NULL,
+			created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+		);`,
+		`CREATE TABLE IF NOT EXISTS admin_sessions (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
+			token_hash TEXT NOT NULL UNIQUE,
+			csrf_hash TEXT NOT NULL DEFAULT '',
+			expires_at TEXT NOT NULL,
+			created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+		);`,
 	}
 
 	for _, statement := range statements {
@@ -65,6 +79,9 @@ func Migrate(conn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumn(conn, "items", "tech_stack", "TEXT DEFAULT ''"); err != nil {
+		return err
+	}
+	if err := ensureColumn(conn, "admin_sessions", "csrf_hash", "TEXT NOT NULL DEFAULT ''"); err != nil {
 		return err
 	}
 	if err := dropProfileLocation(conn); err != nil {

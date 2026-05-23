@@ -5,14 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ .Item.Title }} | {{ .Site.Profile.Name }}</title>
   <link rel="stylesheet" href="/static/css/site.css?v=detail-1">
-  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
-  <script src="/static/js/command-palette.js?v=1" defer></script>
   <script src="/static/js/terminal-buttons.js?v=3" defer></script>
 </head>
 <body>
   <div class="terminal">
     <div class="terminal-bar" aria-label="Terminal window controls">
-      <span class="terminal-label"></span>
       <div class="terminal-controls">
         <button class="terminal-control is-close" type="button" aria-label="Return home" data-terminal-action="close" data-terminal-href="/">
           <span aria-hidden="true"></span>
@@ -38,7 +35,7 @@
         </div>
       </aside>
 
-      <section class="portfolio project-detail" aria-label="Project detail">
+      <section class="portfolio" aria-label="Project detail">
         <p class="detail-prompt">~/resume/projects $ cat {{ .Item.Slug }}</p>
         <article class="detail-card">
           <header class="detail-header">

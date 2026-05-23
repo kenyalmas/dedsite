@@ -18,22 +18,6 @@
     return Array.from(document.querySelectorAll("[data-command-entry]"));
   }
 
-  function availableTags() {
-    var tags = [];
-    var seen = {};
-
-    document.querySelectorAll("[data-tag]").forEach(function (tag) {
-      var value = tag.textContent.trim();
-      var key = normalize(value);
-      if (!seen[key]) {
-        seen[key] = true;
-        tags.push(value);
-      }
-    });
-
-    return tags.sort();
-  }
-
   function allTags() {
     var tags = [];
     var seen = {};

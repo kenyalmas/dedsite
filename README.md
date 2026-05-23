@@ -72,6 +72,7 @@ The server binary also includes a small CLI for inspecting local content:
 
 ```powershell
 go run ./cmd/server cli seed
+go run ./cmd/server cli admin --username kenneth --password "use-a-long-unique-password"
 go run ./cmd/server cli profile
 go run ./cmd/server cli sections
 go run ./cmd/server cli section projects
@@ -92,9 +93,17 @@ go run ./cmd/server --db data/site-dev.db cli --json --pretty section projects
 
 Global flags go before `cli`; CLI output flags go after `cli` and before the command.
 
+Admin users are not created automatically. Create or update the admin login explicitly with:
+
+```powershell
+go run ./cmd/server --db data/site-dev.db cli admin --username kenneth --password "use-a-long-unique-password"
+```
+
+The CLI refuses the old insecure `admin` / `password` default and requires at least 12 password characters.
+
 ## How Content Works
 
-On startup, the app runs migrations and then seeds or syncs project defaults.
+On startup, the app runs migrations and then seeds or syncs project content defaults.
 
 The database has three main tables:
 
