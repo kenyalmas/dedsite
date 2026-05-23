@@ -156,7 +156,7 @@ func serve(options options) error {
 	app := handlers.New(store, tmpl)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", app.Home)
+	mux.HandleFunc("GET /{$}", app.Home)
 	mux.HandleFunc("GET /section/{slug}", app.Section)
 	mux.HandleFunc("GET /project/{slug}", app.Project)
 	mux.HandleFunc("GET /admin", app.Admin)
@@ -169,6 +169,7 @@ func serve(options options) error {
 	mux.HandleFunc("POST /admin/sections/{slug}/entries/{id}", app.AdminUpdateEntry)
 	mux.HandleFunc("DELETE /admin/items/{id}", app.AdminDeleteEntry)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	mux.HandleFunc("GET /{path...}", app.NotFound)
 
 	server := &http.Server{
 		Handler:           mux,

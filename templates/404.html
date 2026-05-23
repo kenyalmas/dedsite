@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>404 | Dedsite</title>
+  <link rel="stylesheet" href="/static/css/site.css?v=404-2">
+  <script src="/static/js/404-terminal.js?v=1" defer></script>
+</head>
+<body>
+  <div class="terminal not-found-terminal is-booting">
+    <div class="terminal-bar" aria-label="Terminal window controls">
+      <div class="terminal-controls">
+        <a class="terminal-control is-close" href="/" aria-label="Return home">
+          <span aria-hidden="true"></span>
+        </a>
+        <span class="terminal-control is-minimize" aria-hidden="true"><span></span></span>
+        <span class="terminal-control is-maximize" aria-hidden="true"><span></span></span>
+      </div>
+    </div>
+
+    <main class="not-found-shell">
+      <p class="detail-prompt">~/home $ dereference {{ .Path }}</p>
+      <form class="not-found-command" data-not-found-command autocomplete="off">
+        <label for="not-found-command-input">~/fault-handler $</label>
+        <input id="not-found-command-input" name="command" type="text" spellcheck="false" placeholder="help">
+        <button type="submit">exec</button>
+        <p class="not-found-command-output" data-not-found-output aria-live="polite"></p>
+      </form>
+      <section class="not-found-panel" aria-labelledby="not-found-title">
+        <div class="not-found-art-wrap">
+          <pre class="not-found-art" aria-hidden="true">{{ .Art }}</pre>
+        </div>
+
+        <div class="not-found-copy">
+          <p class="not-found-code" aria-label="Error code">{{ .ErrnoCode }}</p>
+          <h1 id="not-found-title">404: {{ .Remark }}</h1>
+          <div class="not-found-actions">
+            <a class="contact" href="/">Return home</a>
+            <a class="contact" href="/section/projects">Inspect projects</a>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
