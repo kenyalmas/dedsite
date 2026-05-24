@@ -1,5 +1,5 @@
 [build]
-  command = "cp -r static templates netlify/functions/server/"
+  command = "go run ./cmd/sync-netlify-assets"
   publish = "."
   functions = "netlify/functions"
 

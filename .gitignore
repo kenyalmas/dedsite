@@ -39,6 +39,9 @@ whitepaper.md
 # Local VS Code workspace
 dedsite.code-workspace
 
+# Netlify CLI local build output and site link state
+.netlify/
+
 # Files copied into the function directory by the Netlify build command
 /netlify/functions/server/static/
 /netlify/functions/server/templates/

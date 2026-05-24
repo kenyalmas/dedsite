@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ .Profile.Name }} | {{ .Profile.Title }}</title>
-  <link rel="stylesheet" href="/static/css/site.css?v=terminal-4">
+  <link rel="stylesheet" href="/static/css/site.css?v=terminal-12">
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
   <script src="/static/js/command-palette.js?v=1" defer></script>
   <script src="/static/js/terminal-buttons.js?v=3" defer></script>
@@ -23,6 +23,9 @@
           <span aria-hidden="true"></span>
         </button>
       </div>
+      <nav class="workspace-tabs" aria-label="Site workspaces">
+        <button class="workspace-tab is-active" type="button" data-workspace-tab data-workspace-target="resume" aria-selected="true"><span class="workspace-tab-label">resume.md</span></button>
+      </nav>
     </div>
 
     <main class="shell">
@@ -48,7 +51,7 @@
         </div>
       </aside>
 
-      <section class="portfolio" aria-label="Portfolio">
+      <section class="portfolio workspace-panel is-active" aria-label="Portfolio" data-workspace-panel="resume">
         <form class="command-palette" data-command-palette autocomplete="off">
           <label class="command-label" for="command-input">~/resume $</label>
           <div class="command-input-wrap">
@@ -80,5 +83,27 @@
       </section>
     </main>
   </div>
+  <script>
+    (function () {
+      var tabs = Array.prototype.slice.call(document.querySelectorAll("[data-workspace-tab]"));
+      var panels = Array.prototype.slice.call(document.querySelectorAll("[data-workspace-panel]"));
+      if (tabs.length < 2 || panels.length < 2) return;
+      tabs.forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          var target = tab.getAttribute("data-workspace-target");
+          tabs.forEach(function (node) {
+            var active = node === tab;
+            node.classList.toggle("is-active", active);
+            node.setAttribute("aria-selected", active ? "true" : "false");
+          });
+          panels.forEach(function (panel) {
+            var active = panel.getAttribute("data-workspace-panel") === target;
+            panel.classList.toggle("is-active", active);
+            panel.hidden = !active;
+          });
+        });
+      });
+    }());
+  </script>
 </body>
 </html>

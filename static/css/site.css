@@ -68,10 +68,63 @@ a {
   background: linear-gradient(180deg, rgba(21, 17, 34, 0.96), rgba(12, 10, 21, 0.9));
 }
 
+.workspace-tabs {
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+  flex: 1 1 auto;
+  gap: 2px;
+  min-width: 0;
+  margin-left: 6px;
+  padding: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.workspace-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.workspace-tab {
+  --workspace-tab-bg: #141022;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 9px 9px 6px 6px;
+  background: var(--workspace-tab-bg);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  transform: skewX(-8deg);
+  transform-origin: bottom center;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.workspace-tab.is-active {
+  --workspace-tab-bg: rgba(7, 7, 13, 0.88);
+  background: var(--workspace-tab-bg);
+  color: var(--accent-strong);
+}
+
+.workspace-tab-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  transform: skewX(8deg);
+}
+
+.workspace-tab.is-active .workspace-tab-label::before {
+  color: var(--terminal-green);
+  content: "> ";
+}
+
 .terminal-controls {
   display: flex;
+  flex: 0 0 auto;
+  align-items: center;
   gap: 7px;
-  order: -1;
 }
 
 .terminal-control {
@@ -303,6 +356,14 @@ h1 {
 
 .portfolio {
   min-width: 0;
+}
+
+.workspace-panel {
+  display: none;
+}
+
+.workspace-panel.is-active {
+  display: block;
 }
 
 .command-palette {
@@ -1145,6 +1206,11 @@ h1 {
   .terminal-bar {
     min-height: 54px;
     padding: 0 14px;
+    gap: 10px;
+  }
+
+  .workspace-tabs {
+    margin-left: 0;
   }
 
   .shell {
