@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>awareness.html | Terminal</title>
+  <link rel="stylesheet" href="/static/css/site.css?v=awareness-4">
+  <script src="/static/js/terminal-buttons.js?v=3" defer></script>
+</head>
+<body>
+  <div class="terminal">
+    <div class="terminal-bar" aria-label="Terminal window controls">
+      <div class="terminal-controls">
+        <button class="terminal-control is-close" type="button" aria-label="Return home" data-terminal-action="close" data-terminal-href="/">
+          <span aria-hidden="true"></span>
+        </button>
+        <button class="terminal-control is-minimize" type="button" aria-label="Minimize terminal" data-terminal-action="minimize">
+          <span aria-hidden="true"></span>
+        </button>
+        <button class="terminal-control is-maximize" type="button" aria-label="Toggle focus mode" data-terminal-action="maximize">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
+      <nav class="workspace-tabs" aria-label="Site workspaces">
+        <a class="workspace-tab" href="/"><span class="workspace-tab-label">resume.md</span></a>
+        <button class="workspace-tab is-active" type="button" aria-selected="true"><span class="workspace-tab-label">awareness.html</span></button>
+      </nav>
+    </div>
+
+    <main class="shell detail-shell awareness-shell">
+      <section class="portfolio awareness-panel" aria-label="Safety awareness">
+        <p class="detail-prompt">~/awareness $ reveal --exposure</p>
+        <article class="detail-card">
+          <header class="detail-header">
+            <div>
+              <h2>What We Can See About You</h2>
+            </div>
+          </header>
+
+          <p class="description">This information is not stored.</p>
+
+          <section class="detail-block">
+            <h3>Device Guess</h3>
+            <div class="awareness-terminal-box" role="status" aria-live="polite">
+              <p class="awareness-terminal-prompt">~/awareness $ whoami --device</p>
+              <p class="awareness-terminal-output"><code id="device-guess-text">Collecting...</code></p>
+            </div>
+          </section>
+
+          <section class="detail-block">
+            <h3>High-Impact</h3>
+            <table class="awareness-table" aria-label="Collected browser signals">
+              <tbody id="signals"></tbody>
+            </table>
+          </section>
+
+          <div class="detail-actions">
+            <button id="refresh" class="contact" type="button">Refresh</button>
+            <a class="item-link" href="/">Back to main site</a>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    function safe(value) {
+      if (value === undefined || value === null || value === "") return "Not available";
+      return String(value);
+    }
+
+    function metric(value, unit) {
+      var text = safe(value);
+      return text === "Not available" ? text : text + unit;
+    }
+
+    function guessBrowser(ua) {
+      if (/Edg\//.test(ua)) return "Microsoft Edge";
+      if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) return "Google Chrome";
+      if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) return "Safari";
+      if (/Firefox\//.test(ua)) return "Firefox";
+      return "Unknown browser";
+    }
+
+    async function collectSignals() {
+      var server = {};
+      try {
+        var response = await fetch("/awareness/data", { headers: { "Accept": "application/json" } });
+        if (response.ok) server = await response.json();
+      } catch (e) {}
+
+      var locationValue = "Permission not granted";
+      if (navigator.geolocation) {
+        locationValue = await new Promise(function (resolve) {
+          navigator.geolocation.getCurrentPosition(
+            function (pos) {
+              resolve(pos.coords.latitude.toFixed(5) + ", " + pos.coords.longitude.toFixed(5));
+            },
+            function () {
+              resolve("Permission denied or unavailable");
+            },
+            { enableHighAccuracy: false, timeout: 2500, maximumAge: 60000 }
+          );
+        });
+      }
+
+      var connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
+      var viewport = window.innerWidth + "x" + window.innerHeight;
+      var screenRes = window.screen.width + "x" + window.screen.height;
+      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      var ua = navigator.userAgent;
+      var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || safe(server.sec_ch_ua_mobile) === "?1";
+      var osGuess = safe(server.sec_ch_ua_platform).replaceAll("\"", "");
+      if (osGuess === "Not available" || osGuess === "") osGuess = navigator.platform;
+      var browserGuess = guessBrowser(ua);
+
+      var networkType = connection.effectiveType ? String(connection.effectiveType).toUpperCase() : "unknown";
+      var deviceGuess = (isMobile ? "Mobile/tablet" : "Desktop/laptop") +
+        " | " + osGuess +
+        " | " + browserGuess +
+        " | " + screenRes +
+        " | " + metric(navigator.hardwareConcurrency, " cores") +
+        " | " + metric(navigator.deviceMemory, " GB RAM");
+
+      var deviceGuessNode = document.getElementById("device-guess-text");
+      if (deviceGuessNode) {
+        deviceGuessNode.textContent = deviceGuess;
+      }
+
+      return [
+        { label: "IP Address", value: safe(server.ip) },
+        { label: "Geo", value: locationValue },
+        { label: "Device", value: navigator.platform },
+        { label: "Browser", value: browserGuess },
+        { label: "Time Zone", value: tz },
+        { label: "Screen", value: screenRes },
+        { label: "Viewport", value: viewport + " @ " + (window.devicePixelRatio || 1) },
+        { label: "Network Hints", value: networkType + ", " + metric(connection.downlink, "Mb/s") + ", rtt " + metric(connection.rtt, "ms") },
+        { label: "CPU + Memory", value: metric(navigator.hardwareConcurrency, " cores") + ", " + metric(navigator.deviceMemory, " GB") }
+      ];
+    }
+
+    async function renderSignals() {
+      var refreshButton = document.getElementById("refresh");
+      var tbody = document.getElementById("signals");
+      refreshButton.disabled = true;
+      refreshButton.textContent = "Refreshing...";
+      var signals = await collectSignals();
+      tbody.innerHTML = "";
+      signals.forEach(function (signal) {
+        var row = document.createElement("tr");
+        var label = document.createElement("th");
+        label.textContent = signal.label;
+        var value = document.createElement("td");
+        value.innerHTML = "<code>" + safe(signal.value).replaceAll("<", "&lt;").replaceAll(">", "&gt;") + "</code>";
+        row.appendChild(label);
+        row.appendChild(value);
+        tbody.appendChild(row);
+      });
+      refreshButton.disabled = false;
+      refreshButton.textContent = "Refresh";
+    }
+
+    document.getElementById("refresh").addEventListener("click", renderSignals);
+    renderSignals();
+  </script>
+</body>
+</html>
