@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"dedsite/internal/db"
 	"dedsite/internal/handlers"
-	"errors"
 	"embed"
+	"errors"
 	"html/template"
 	"io/fs"
 	"log"
@@ -22,10 +22,10 @@ import (
 
 var (
 	//go:embed templates/*.html templates/partials/*.html static/**
-	siteFS     embed.FS
-	adapter    *httpadapter.HandlerAdapter
-	bootstrap  sync.Once
-	bootErr    error
+	siteFS    embed.FS
+	adapter   *httpadapter.HandlerAdapter
+	bootstrap sync.Once
+	bootErr   error
 )
 
 func initServer() error {
@@ -44,6 +44,9 @@ func initServer() error {
 	}
 	store := db.NewStore(conn)
 	if err := store.SeedDefaults(); err != nil {
+		return err
+	}
+	if err := seedAdminFromEnv(store); err != nil {
 		return err
 	}
 
@@ -96,4 +99,19 @@ func main() {
 		}
 		return adapter.Proxy(req)
 	})
+}
+
+func seedAdminFromEnv(store db.Store) error {
+	username := os.Getenv("ADMIN_USERNAME")
+	password := os.Getenv("ADMIN_PASSWORD")
+	if username == "" && password == "" {
+		return nil
+	}
+	if username == "" || password == "" {
+		return errors.New("ADMIN_USERNAME and ADMIN_PASSWORD must both be set")
+	}
+	if len(password) < 12 {
+		return errors.New("ADMIN_PASSWORD must be at least 12 characters")
+	}
+	return store.SetAdminPassword(username, password)
 }
