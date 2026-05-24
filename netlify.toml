@@ -1,0 +1,9 @@
+[build]
+  command = "cp -r static templates netlify/functions/server/"
+  publish = "."
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/server"
+  status = 200

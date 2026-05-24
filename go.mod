@@ -5,6 +5,8 @@ go 1.25.0
 require modernc.org/sqlite v1.50.0
 
 require (
+	github.com/aws/aws-lambda-go v1.47.0 // indirect
+	github.com/awslabs/aws-lambda-go-api-proxy v0.16.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
