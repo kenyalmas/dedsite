@@ -162,6 +162,8 @@ func serve(options options) error {
 	mux.HandleFunc("GET /{$}", app.Home)
 	mux.HandleFunc("GET /section/{slug}", app.Section)
 	mux.HandleFunc("GET /project/{slug}", app.Project)
+	mux.HandleFunc("GET /awareness", app.Awareness)
+	mux.HandleFunc("GET /awareness/data", app.AwarenessData)
 	mux.HandleFunc("GET /admin", app.Admin)
 	mux.HandleFunc("GET /admin/login", app.AdminLogin)
 	mux.HandleFunc("POST /admin/login", app.AdminLogin)

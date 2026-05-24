@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>awareness.html | Terminal</title>
+  <link rel="stylesheet" href="/static/css/site.css?v=awareness-4">
+  <script src="/static/js/terminal-buttons.js?v=3" defer></script>
+</head>
+<body>
+  <div class="terminal">
+    <div class="terminal-bar" aria-label="Terminal window controls">
+      <div class="terminal-controls">
+        <button class="terminal-control is-close" type="button" aria-label="Return home" data-terminal-action="close" data-terminal-href="/">
+          <span aria-hidden="true"></span>
+        </button>
+        <button class="terminal-control is-minimize" type="button" aria-label="Minimize terminal" data-terminal-action="minimize">
+          <span aria-hidden="true"></span>
+        </button>
+        <button class="terminal-control is-maximize" type="button" aria-label="Toggle focus mode" data-terminal-action="maximize">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
+      <nav class="workspace-tabs" aria-label="Site workspaces">
+        <a class="workspace-tab" href="/"><span class="workspace-tab-label">resume.md</span></a>
+        <button class="workspace-tab is-active" type="button" aria-selected="true"><span class="workspace-tab-label">awareness.html</span></button>
+      </nav>
+    </div>
+
+    <main class="shell detail-shell awareness-shell">
+      <section class="portfolio awareness-panel" aria-label="Safety awareness">
+        <p class="detail-prompt">~/awareness $ reveal --exposure</p>
+        <article class="detail-card">
+          <header class="detail-header">
+            <div>
+              <h2>What We Can See About You</h2>
+            </div>
+          </header>
+
+          <p class="description">This information is not stored.</p>
+
+          <section class="detail-block">
+            <h3>Device Guess</h3>
+            <div class="awareness-terminal-box" role="status" aria-live="polite">
+              <p class="awareness-terminal-prompt"><span class="awareness-path">~/awareness</span> $ whoami --device</p>
+              <p class="awareness-terminal-output"><code id="device-guess-text">Collecting...</code></p>
+            </div>
+          </section>
+
+          <section class="detail-block">
+            <h3>High-Impact</h3>
+            <table class="awareness-table" aria-label="Collected browser signals">
+              <tbody id="signals"></tbody>
+            </table>
+          </section>
+
+          <div class="detail-actions">
+            <button id="refresh" class="contact" type="button">Refresh</button>
+            <a class="item-link" href="/">Back to main site</a>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    function safe(value) {
+      if (value === undefined || value === null || value === "") return "Not available";
+      return String(value);
+    }
+
+    async function collectSignals() {
+      var server = {};
+      try {
+        var response = await fetch("/awareness/data", { headers: { "Accept": "application/json" } });
+        if (response.ok) server = await response.json();
+      } catch (e) {}
+
+      var locationValue = "Permission not granted";
+      if (navigator.geolocation) {
+        locationValue = await new Promise(function (resolve) {
+          navigator.geolocation.getCurrentPosition(
+            function (pos) {
+              resolve(pos.coords.latitude.toFixed(5) + ", " + pos.coords.longitude.toFixed(5));
+            },
+            function () {
+              resolve("Permission denied or unavailable");
+            },
+            { enableHighAccuracy: false, timeout: 2500, maximumAge: 60000 }
+          );
+        });
+      }
+
+      var connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
+      var viewport = window.innerWidth + "x" + window.innerHeight;
+      var screenRes = window.screen.width + "x" + window.screen.height;
+      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      var locale = Intl.DateTimeFormat().resolvedOptions().locale || "";
+
+      var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || safe(server.sec_ch_ua_mobile) === "?1";
+      var osGuess = safe(server.sec_ch_ua_platform).replaceAll("\"", "");
+      if (osGuess === "Not available" || osGuess === "") osGuess = navigator.platform;
+      var browserGuess = "Unknown browser";
+      var ua = navigator.userAgent;
+      if (/Edg\//.test(ua)) browserGuess = "Microsoft Edge";
+      else if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) browserGuess = "Google Chrome";
+      else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) browserGuess = "Safari";
+      else if (/Firefox\//.test(ua)) browserGuess = "Firefox";
+
+      var networkType = connection.effectiveType ? String(connection.effectiveType).toUpperCase() : "unknown";
+      var memoryGuess = safe(navigator.deviceMemory) === "Not available" ? "unknown memory" : (safe(navigator.deviceMemory) + " GB RAM");
+      var deviceGuess = (isMobile ? "Mobile/tablet" : "Desktop/laptop") +
+        " | " + osGuess +
+        " | " + browserGuess +
+        " | " + screenRes +
+        " | " + safe(navigator.hardwareConcurrency) + " cores" +
+        " | " + memoryGuess;
+
+      var deviceGuessNode = document.getElementById("device-guess-text");
+      if (deviceGuessNode) {
+        deviceGuessNode.textContent = deviceGuess;
+      }
+
+      return {
+        "IP Address": safe(server.ip),
+        "Geo": locationValue,
+        "Device": navigator.platform,
+        "Browser": browserGuess,
+        "Time Zone": tz,
+        "Screen": screenRes,
+        "Viewport": viewport + " @ " + (window.devicePixelRatio || 1),
+        "Network Hints": networkType + ", " + safe(connection.downlink) + "Mb/s, rtt " + safe(connection.rtt),
+        "CPU + Memory": safe(navigator.hardwareConcurrency) + " cores, " + safe(navigator.deviceMemory) + " GB",
+      };
+    }
+
+    async function renderSignals() {
+      var refreshButton = document.getElementById("refresh");
+      var tbody = document.getElementById("signals");
+      refreshButton.disabled = true;
+      refreshButton.textContent = "Refreshing...";
+      var signals = await collectSignals();
+      tbody.innerHTML = "";
+      Object.keys(signals).forEach(function (key) {
+        var row = document.createElement("tr");
+        var label = document.createElement("th");
+        label.textContent = key;
+        var value = document.createElement("td");
+        value.innerHTML = "<code>" + safe(signals[key]).replaceAll("<", "&lt;").replaceAll(">", "&gt;") + "</code>";
+        row.appendChild(label);
+        row.appendChild(value);
+        tbody.appendChild(row);
+      });
+      refreshButton.disabled = false;
+      refreshButton.textContent = "Refresh";
+    }
+
+    document.getElementById("refresh").addEventListener("click", renderSignals);
+    renderSignals();
+  </script>
+</body>
+</html>

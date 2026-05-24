@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"dedsite/internal/auth"
+	"encoding/json"
 	"errors"
 	"html/template"
 	"math/rand"
@@ -299,6 +300,35 @@ func (h Handler) Project(w http.ResponseWriter, r *http.Request) {
 		Site: site,
 		Item: item,
 	})
+}
+
+func (h Handler) Awareness(w http.ResponseWriter, r *http.Request) {
+	h.render(w, "awareness.html", nil)
+}
+
+func (h Handler) AwarenessData(w http.ResponseWriter, r *http.Request) {
+	ip := requestIP(r, h.trustProxyHeaders)
+	cookieCount := len(r.Cookies())
+	payload := map[string]string{
+		"ip":                ip,
+		"x_forwarded_for":   r.Header.Get("X-Forwarded-For"),
+		"x_real_ip":         r.Header.Get("X-Real-IP"),
+		"forwarded_proto":   r.Header.Get("X-Forwarded-Proto"),
+		"forwarded_host":    r.Header.Get("X-Forwarded-Host"),
+		"host":              r.Host,
+		"accept":            r.Header.Get("Accept"),
+		"accept_encoding":   r.Header.Get("Accept-Encoding"),
+		"accept_language":   r.Header.Get("Accept-Language"),
+		"dnt":               r.Header.Get("DNT"),
+		"sec_gpc":           r.Header.Get("Sec-GPC"),
+		"sec_ch_ua":         r.Header.Get("Sec-CH-UA"),
+		"sec_ch_ua_mobile":  r.Header.Get("Sec-CH-UA-Mobile"),
+		"sec_ch_ua_platform": r.Header.Get("Sec-CH-UA-Platform"),
+		"user_agent_server": r.UserAgent(),
+		"cookie_count":      strconv.Itoa(cookieCount),
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(payload)
 }
 
 func (h Handler) NotFound(w http.ResponseWriter, r *http.Request) {
@@ -815,6 +845,25 @@ func loginKey(r *http.Request, username string) string {
 		host = r.RemoteAddr
 	}
 	return strings.ToLower(strings.TrimSpace(username)) + "|" + host
+}
+
+func requestIP(r *http.Request, trustProxyHeaders bool) string {
+	if trustProxyHeaders {
+		if value := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); value != "" {
+			parts := strings.Split(value, ",")
+			if len(parts) > 0 {
+				return strings.TrimSpace(parts[0])
+			}
+		}
+		if value := strings.TrimSpace(r.Header.Get("X-Real-IP")); value != "" {
+			return value
+		}
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err == nil {
+		return host
+	}
+	return r.RemoteAddr
 }
 
 func adminLoginBlocked(key string) (bool, string) {
