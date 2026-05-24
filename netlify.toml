@@ -1,9 +1,7 @@
 [build]
+  command = "cp -r static templates netlify/functions/server/"
   publish = "."
   functions = "netlify/functions"
-
-[functions]
-  included_files = ["templates/**", "static/**"]
 
 [[redirects]]
   from = "/*"
