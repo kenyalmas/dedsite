@@ -19,8 +19,9 @@ import (
 )
 
 type Handler struct {
-	store     db.Store
-	templates *template.Template
+	store             db.Store
+	templates         *template.Template
+	trustProxyHeaders bool
 }
 
 type SectionResponse struct {
@@ -223,10 +224,11 @@ type loginAttempt struct {
 	BlockedTo time.Time
 }
 
-func New(store db.Store, templates *template.Template) Handler {
+func New(store db.Store, templates *template.Template, trustProxyHeaders bool) Handler {
 	return Handler{
-		store:     store,
-		templates: templates,
+		store:             store,
+		templates:         templates,
+		trustProxyHeaders: trustProxyHeaders,
 	}
 }
 
@@ -347,6 +349,7 @@ func (h Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not create session", http.StatusInternalServerError)
 		return
 	}
+	secureCookie := isSecureRequest(r, h.trustProxyHeaders)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "dedsite_admin",
@@ -354,7 +357,7 @@ func (h Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 		Path:     "/admin",
 		Expires:  expires,
 		HttpOnly: true,
-		Secure:   isSecureRequest(r),
+		Secure:   secureCookie,
 		SameSite: http.SameSiteLaxMode,
 	})
 	http.SetCookie(w, &http.Cookie{
@@ -363,7 +366,7 @@ func (h Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 		Path:     "/admin",
 		Expires:  expires,
 		HttpOnly: false,
-		Secure:   isSecureRequest(r),
+		Secure:   secureCookie,
 		SameSite: http.SameSiteLaxMode,
 	})
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
@@ -631,8 +634,9 @@ func (h Handler) AdminLogout(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	expireCookie(w, "dedsite_admin", true, isSecureRequest(r))
-	expireCookie(w, "dedsite_csrf", false, isSecureRequest(r))
+	secureCookie := isSecureRequest(r, h.trustProxyHeaders)
+	expireCookie(w, "dedsite_admin", true, secureCookie)
+	expireCookie(w, "dedsite_csrf", false, secureCookie)
 	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 }
 
@@ -711,6 +715,7 @@ func (h Handler) ensureCSRFToken(w http.ResponseWriter, r *http.Request, session
 	if err := h.store.SetAdminSessionCSRF(sessionCookie.Value, token); err != nil {
 		return "", err
 	}
+	secureCookie := isSecureRequest(r, h.trustProxyHeaders)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "dedsite_csrf",
@@ -718,7 +723,7 @@ func (h Handler) ensureCSRFToken(w http.ResponseWriter, r *http.Request, session
 		Path:     "/admin",
 		Expires:  session.ExpiresAt.UTC(),
 		HttpOnly: false,
-		Secure:   isSecureRequest(r),
+		Secure:   secureCookie,
 		SameSite: http.SameSiteLaxMode,
 	})
 	return token, nil
@@ -794,9 +799,12 @@ func normalizeAllowedURL(raw string) string {
 	}
 }
 
-func isSecureRequest(r *http.Request) bool {
+func isSecureRequest(r *http.Request, trustProxyHeaders bool) bool {
 	if r.TLS != nil {
 		return true
+	}
+	if !trustProxyHeaders {
+		return false
 	}
 	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 }

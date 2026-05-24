@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -74,7 +73,7 @@ func HashToken(token string) string {
 
 func pbkdf2Key(password []byte, salt []byte, iterations int, keyLength int) []byte {
 	if iterations <= 0 || keyLength <= 0 {
-		panic(errors.New("invalid pbkdf2 parameters"))
+		return nil
 	}
 
 	hashLength := sha256.Size

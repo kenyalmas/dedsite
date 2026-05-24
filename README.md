@@ -66,6 +66,9 @@ go run ./cmd/server --no-seed --db data/site-dev.db
 
 `DATABASE_PATH` sets the SQLite database path. The default is `data/site.db`.
 
+`TRUST_PROXY_HEADERS` controls whether headers such as `X-Forwarded-Proto` are trusted for secure-cookie decisions.  
+Default is `false`. Set to `true` only when running behind a trusted reverse proxy.
+
 ## CLI
 
 The server binary also includes a small CLI for inspecting local content:

@@ -44,9 +44,10 @@ func main() {
 }
 
 type options struct {
-	addr   string
-	dbPath string
-	noSeed bool
+	addr              string
+	dbPath            string
+	noSeed            bool
+	trustProxyHeaders bool
 }
 
 type cliOptions struct {
@@ -61,14 +62,16 @@ type adminCLIOptions struct {
 
 func parseOptions(args []string) (options, []string, error) {
 	values := options{
-		addr:   env("ADDR", ":8080"),
-		dbPath: env("DATABASE_PATH", filepath.Join("data", "site.db")),
+		addr:              env("ADDR", ":8080"),
+		dbPath:            env("DATABASE_PATH", filepath.Join("data", "site.db")),
+		trustProxyHeaders: strings.EqualFold(env("TRUST_PROXY_HEADERS", "false"), "true"),
 	}
 
 	flags := flag.NewFlagSet("dedsite", flag.ContinueOnError)
 	flags.StringVar(&values.addr, "port", values.addr, "server port or address")
 	flags.StringVar(&values.dbPath, "db", values.dbPath, "SQLite database path")
 	flags.BoolVar(&values.noSeed, "no-seed", false, "skip default content seeding")
+	flags.BoolVar(&values.trustProxyHeaders, "trust-proxy-headers", values.trustProxyHeaders, "trust proxy forwarding headers like X-Forwarded-Proto")
 
 	if err := flags.Parse(args); err != nil {
 		return options{}, nil, err
@@ -153,7 +156,7 @@ func serve(options options) error {
 		return fmt.Errorf("parse partial templates: %w", err)
 	}
 
-	app := handlers.New(store, tmpl)
+	app := handlers.New(store, tmpl, options.trustProxyHeaders)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", app.Home)
