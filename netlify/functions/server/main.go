@@ -5,11 +5,13 @@ import (
 	"dedsite/internal/db"
 	"dedsite/internal/handlers"
 	"errors"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -43,11 +45,16 @@ func initServer() error {
 		return err
 	}
 
-	tmpl, err := template.ParseGlob(filepath.Join("templates", "*.html"))
+	projectRoot, err := resolveProjectRoot()
 	if err != nil {
 		return err
 	}
-	if tmpl, err = tmpl.ParseGlob(filepath.Join("templates", "partials", "*.html")); err != nil {
+
+	tmpl, err := template.ParseGlob(filepath.Join(projectRoot, "templates", "*.html"))
+	if err != nil {
+		return err
+	}
+	if tmpl, err = tmpl.ParseGlob(filepath.Join(projectRoot, "templates", "partials", "*.html")); err != nil {
 		return err
 	}
 
@@ -65,7 +72,7 @@ func initServer() error {
 	mux.HandleFunc("POST /admin/sections/{slug}/entries", app.AdminCreateEntry)
 	mux.HandleFunc("POST /admin/sections/{slug}/entries/{id}", app.AdminUpdateEntry)
 	mux.HandleFunc("DELETE /admin/items/{id}", app.AdminDeleteEntry)
-	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(projectRoot, "static")))))
 	mux.HandleFunc("GET /{path...}", app.NotFound)
 
 	adapter = httpadapter.New(mux)
@@ -83,7 +90,7 @@ func main() {
 		if bootErr != nil {
 			return events.APIGatewayProxyResponse{
 				StatusCode: http.StatusInternalServerError,
-				Body:       "startup failure",
+				Body:       "startup failure: " + bootErr.Error(),
 			}, nil
 		}
 		if adapter == nil {
@@ -91,4 +98,29 @@ func main() {
 		}
 		return adapter.Proxy(req)
 	})
+}
+
+func resolveProjectRoot() (string, error) {
+	candidates := []string{}
+	if taskRoot := strings.TrimSpace(os.Getenv("LAMBDA_TASK_ROOT")); taskRoot != "" {
+		candidates = append(candidates, taskRoot)
+	}
+	if wd, err := os.Getwd(); err == nil && wd != "" {
+		candidates = append(candidates, wd)
+	}
+	candidates = append(candidates, ".")
+
+	for _, root := range candidates {
+		templatesPath := filepath.Join(root, "templates")
+		staticPath := filepath.Join(root, "static")
+		if dirExists(templatesPath) && dirExists(staticPath) {
+			return root, nil
+		}
+	}
+	return "", fmt.Errorf("could not locate project root; checked %v", candidates)
+}
+
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
 }
