@@ -6,8 +6,11 @@ import (
 	"dedsite/internal/handlers"
 	"errors"
 	"html/template"
+	"log"
 	"net/http"
+	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -15,27 +18,37 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var adapter *httpadapter.HandlerAdapter
+var (
+	adapter    *httpadapter.HandlerAdapter
+	bootstrap  sync.Once
+	bootErr    error
+)
 
-func init() {
-	conn, err := sql.Open("sqlite", filepath.Join("data", "site.db"))
+func initServer() error {
+	// Netlify/AWS Lambda only guarantees write access under /tmp.
+	dbDir := filepath.Join(os.TempDir(), "dedsite")
+	if err := os.MkdirAll(dbDir, 0755); err != nil {
+		return err
+	}
+
+	conn, err := sql.Open("sqlite", filepath.Join(dbDir, "site.db"))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if err := db.Migrate(conn); err != nil {
-		panic(err)
+		return err
 	}
 	store := db.NewStore(conn)
 	if err := store.SeedDefaults(); err != nil {
-		panic(err)
+		return err
 	}
 
 	tmpl, err := template.ParseGlob(filepath.Join("templates", "*.html"))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if tmpl, err = tmpl.ParseGlob(filepath.Join("templates", "partials", "*.html")); err != nil {
-		panic(err)
+		return err
 	}
 
 	app := handlers.New(store, tmpl, true)
@@ -56,14 +69,26 @@ func init() {
 	mux.HandleFunc("GET /{path...}", app.NotFound)
 
 	adapter = httpadapter.New(mux)
+	return nil
 }
 
 func main() {
 	lambda.Start(func(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+		bootstrap.Do(func() {
+			bootErr = initServer()
+			if bootErr != nil {
+				log.Printf("bootstrap failed: %v", bootErr)
+			}
+		})
+		if bootErr != nil {
+			return events.APIGatewayProxyResponse{
+				StatusCode: http.StatusInternalServerError,
+				Body:       "startup failure",
+			}, nil
+		}
 		if adapter == nil {
 			return events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}, errors.New("handler not initialized")
 		}
 		return adapter.Proxy(req)
 	})
 }
-
