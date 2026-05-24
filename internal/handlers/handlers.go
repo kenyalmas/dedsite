@@ -308,24 +308,10 @@ func (h Handler) Awareness(w http.ResponseWriter, r *http.Request) {
 
 func (h Handler) AwarenessData(w http.ResponseWriter, r *http.Request) {
 	ip := requestIP(r, h.trustProxyHeaders)
-	cookieCount := len(r.Cookies())
 	payload := map[string]string{
-		"ip":                ip,
-		"x_forwarded_for":   r.Header.Get("X-Forwarded-For"),
-		"x_real_ip":         r.Header.Get("X-Real-IP"),
-		"forwarded_proto":   r.Header.Get("X-Forwarded-Proto"),
-		"forwarded_host":    r.Header.Get("X-Forwarded-Host"),
-		"host":              r.Host,
-		"accept":            r.Header.Get("Accept"),
-		"accept_encoding":   r.Header.Get("Accept-Encoding"),
-		"accept_language":   r.Header.Get("Accept-Language"),
-		"dnt":               r.Header.Get("DNT"),
-		"sec_gpc":           r.Header.Get("Sec-GPC"),
-		"sec_ch_ua":         r.Header.Get("Sec-CH-UA"),
-		"sec_ch_ua_mobile":  r.Header.Get("Sec-CH-UA-Mobile"),
+		"ip":                 ip,
+		"sec_ch_ua_mobile":   r.Header.Get("Sec-CH-UA-Mobile"),
 		"sec_ch_ua_platform": r.Header.Get("Sec-CH-UA-Platform"),
-		"user_agent_server": r.UserAgent(),
-		"cookie_count":      strconv.Itoa(cookieCount),
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(payload)

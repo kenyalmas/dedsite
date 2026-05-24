@@ -731,9 +731,6 @@ h1 {
   color: inherit;
 }
 
-.awareness-terminal-prompt .awareness-path {
-  color: var(--terminal-green) !important;
-}
 
 .tags {
   display: flex;

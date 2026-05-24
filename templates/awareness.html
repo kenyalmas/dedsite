@@ -42,7 +42,7 @@
           <section class="detail-block">
             <h3>Device Guess</h3>
             <div class="awareness-terminal-box" role="status" aria-live="polite">
-              <p class="awareness-terminal-prompt"><span class="awareness-path">~/awareness</span> $ whoami --device</p>
+              <p class="awareness-terminal-prompt">~/awareness $ whoami --device</p>
               <p class="awareness-terminal-output"><code id="device-guess-text">Collecting...</code></p>
             </div>
           </section>
@@ -67,6 +67,19 @@
     function safe(value) {
       if (value === undefined || value === null || value === "") return "Not available";
       return String(value);
+    }
+
+    function metric(value, unit) {
+      var text = safe(value);
+      return text === "Not available" ? text : text + unit;
+    }
+
+    function guessBrowser(ua) {
+      if (/Edg\//.test(ua)) return "Microsoft Edge";
+      if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) return "Google Chrome";
+      if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) return "Safari";
+      if (/Firefox\//.test(ua)) return "Firefox";
+      return "Unknown browser";
     }
 
     async function collectSignals() {
@@ -95,43 +108,36 @@
       var viewport = window.innerWidth + "x" + window.innerHeight;
       var screenRes = window.screen.width + "x" + window.screen.height;
       var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      var locale = Intl.DateTimeFormat().resolvedOptions().locale || "";
-
-      var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || safe(server.sec_ch_ua_mobile) === "?1";
+      var ua = navigator.userAgent;
+      var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || safe(server.sec_ch_ua_mobile) === "?1";
       var osGuess = safe(server.sec_ch_ua_platform).replaceAll("\"", "");
       if (osGuess === "Not available" || osGuess === "") osGuess = navigator.platform;
-      var browserGuess = "Unknown browser";
-      var ua = navigator.userAgent;
-      if (/Edg\//.test(ua)) browserGuess = "Microsoft Edge";
-      else if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) browserGuess = "Google Chrome";
-      else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) browserGuess = "Safari";
-      else if (/Firefox\//.test(ua)) browserGuess = "Firefox";
+      var browserGuess = guessBrowser(ua);
 
       var networkType = connection.effectiveType ? String(connection.effectiveType).toUpperCase() : "unknown";
-      var memoryGuess = safe(navigator.deviceMemory) === "Not available" ? "unknown memory" : (safe(navigator.deviceMemory) + " GB RAM");
       var deviceGuess = (isMobile ? "Mobile/tablet" : "Desktop/laptop") +
         " | " + osGuess +
         " | " + browserGuess +
         " | " + screenRes +
-        " | " + safe(navigator.hardwareConcurrency) + " cores" +
-        " | " + memoryGuess;
+        " | " + metric(navigator.hardwareConcurrency, " cores") +
+        " | " + metric(navigator.deviceMemory, " GB RAM");
 
       var deviceGuessNode = document.getElementById("device-guess-text");
       if (deviceGuessNode) {
         deviceGuessNode.textContent = deviceGuess;
       }
 
-      return {
-        "IP Address": safe(server.ip),
-        "Geo": locationValue,
-        "Device": navigator.platform,
-        "Browser": browserGuess,
-        "Time Zone": tz,
-        "Screen": screenRes,
-        "Viewport": viewport + " @ " + (window.devicePixelRatio || 1),
-        "Network Hints": networkType + ", " + safe(connection.downlink) + "Mb/s, rtt " + safe(connection.rtt),
-        "CPU + Memory": safe(navigator.hardwareConcurrency) + " cores, " + safe(navigator.deviceMemory) + " GB",
-      };
+      return [
+        { label: "IP Address", value: safe(server.ip) },
+        { label: "Geo", value: locationValue },
+        { label: "Device", value: navigator.platform },
+        { label: "Browser", value: browserGuess },
+        { label: "Time Zone", value: tz },
+        { label: "Screen", value: screenRes },
+        { label: "Viewport", value: viewport + " @ " + (window.devicePixelRatio || 1) },
+        { label: "Network Hints", value: networkType + ", " + metric(connection.downlink, "Mb/s") + ", rtt " + metric(connection.rtt, "ms") },
+        { label: "CPU + Memory", value: metric(navigator.hardwareConcurrency, " cores") + ", " + metric(navigator.deviceMemory, " GB") }
+      ];
     }
 
     async function renderSignals() {
@@ -141,12 +147,12 @@
       refreshButton.textContent = "Refreshing...";
       var signals = await collectSignals();
       tbody.innerHTML = "";
-      Object.keys(signals).forEach(function (key) {
+      signals.forEach(function (signal) {
         var row = document.createElement("tr");
         var label = document.createElement("th");
-        label.textContent = key;
+        label.textContent = signal.label;
         var value = document.createElement("td");
-        value.innerHTML = "<code>" + safe(signals[key]).replaceAll("<", "&lt;").replaceAll(">", "&gt;") + "</code>";
+        value.innerHTML = "<code>" + safe(signal.value).replaceAll("<", "&lt;").replaceAll(">", "&gt;") + "</code>";
         row.appendChild(label);
         row.appendChild(value);
         tbody.appendChild(row);
