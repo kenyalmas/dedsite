@@ -1,0 +1,14 @@
+{
+  "name": "dedsite",
+  "short_name": "dedsite",
+  "icons": [
+    {
+      "src": "/static/icons/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#0d0b16",
+  "background_color": "#07070d",
+  "display": "standalone"
+}
