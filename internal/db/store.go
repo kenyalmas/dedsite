@@ -160,84 +160,19 @@ func (s Store) DeleteItem(id int64) error {
 }
 
 func (s Store) ItemByID(id int64) (Item, error) {
-	var item Item
-	var rawTags string
-	var rawTechStack string
-	var rawSlug sql.NullString
-	var rawProblem sql.NullString
-	var rawBuilt sql.NullString
-	var rawLearned sql.NullString
-	err := s.conn.QueryRow(`
+	return scanItem(s.conn.QueryRow(`
 		SELECT id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
 		FROM items
 		WHERE id = ?
-	`, id).Scan(
-		&item.ID,
-		&rawSlug,
-		&item.Title,
-		&item.Subtitle,
-		&item.Period,
-		&item.Description,
-		&item.URL,
-		&item.ImageURL,
-		&item.ImageAlt,
-		&rawProblem,
-		&rawBuilt,
-		&rawLearned,
-		&rawTechStack,
-		&rawTags,
-	)
-	if err != nil {
-		return Item{}, err
-	}
-
-	item.Slug = rawSlug.String
-	item.Problem = rawProblem.String
-	item.Built = rawBuilt.String
-	item.Learned = rawLearned.String
-	item.TechStack = splitTags(rawTechStack)
-	item.Tags = splitTags(rawTags)
-	return item, nil
+	`, id))
 }
 
 func (s Store) Item(slug string) (Item, error) {
-	var item Item
-	var rawTags string
-	var rawTechStack string
-	var rawSlug sql.NullString
-	var rawProblem sql.NullString
-	var rawBuilt sql.NullString
-	var rawLearned sql.NullString
-	err := s.conn.QueryRow(`
-		SELECT slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
+	return scanItem(s.conn.QueryRow(`
+		SELECT id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
 		FROM items
 		WHERE slug = ?
-	`, slug).Scan(
-		&rawSlug,
-		&item.Title,
-		&item.Subtitle,
-		&item.Period,
-		&item.Description,
-		&item.URL,
-		&item.ImageURL,
-		&item.ImageAlt,
-		&rawProblem,
-		&rawBuilt,
-		&rawLearned,
-		&rawTechStack,
-		&rawTags,
-	)
-	if err != nil {
-		return Item{}, err
-	}
-
-	item.Slug = rawSlug.String
-	item.Problem = rawProblem.String
-	item.Built = rawBuilt.String
-	item.Learned = rawLearned.String
-	item.TechStack = splitTags(rawTechStack)
-	item.Tags = splitTags(rawTags)
-	return item, nil
+	`, slug))
 }
 
 func (s Store) items(sectionID int64) ([]Item, error) {
@@ -254,41 +189,54 @@ func (s Store) items(sectionID int64) ([]Item, error) {
 
 	var items []Item
 	for rows.Next() {
-		var item Item
-		var rawTags string
-		var rawTechStack string
-		var rawSlug sql.NullString
-		var rawProblem sql.NullString
-		var rawBuilt sql.NullString
-		var rawLearned sql.NullString
-		if err := rows.Scan(
-			&item.ID,
-			&rawSlug,
-			&item.Title,
-			&item.Subtitle,
-			&item.Period,
-			&item.Description,
-			&item.URL,
-			&item.ImageURL,
-			&item.ImageAlt,
-			&rawProblem,
-			&rawBuilt,
-			&rawLearned,
-			&rawTechStack,
-			&rawTags,
-		); err != nil {
+		item, err := scanItem(rows)
+		if err != nil {
 			return nil, err
 		}
-		item.Slug = rawSlug.String
-		item.Problem = rawProblem.String
-		item.Built = rawBuilt.String
-		item.Learned = rawLearned.String
-		item.TechStack = splitTags(rawTechStack)
-		item.Tags = splitTags(rawTags)
 		items = append(items, item)
 	}
 
 	return items, rows.Err()
+}
+
+type itemScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanItem(scanner itemScanner) (Item, error) {
+	var item Item
+	var rawSlug sql.NullString
+	var rawProblem sql.NullString
+	var rawBuilt sql.NullString
+	var rawLearned sql.NullString
+	var rawTechStack string
+	var rawTags string
+	if err := scanner.Scan(
+		&item.ID,
+		&rawSlug,
+		&item.Title,
+		&item.Subtitle,
+		&item.Period,
+		&item.Description,
+		&item.URL,
+		&item.ImageURL,
+		&item.ImageAlt,
+		&rawProblem,
+		&rawBuilt,
+		&rawLearned,
+		&rawTechStack,
+		&rawTags,
+	); err != nil {
+		return Item{}, err
+	}
+
+	item.Slug = rawSlug.String
+	item.Problem = rawProblem.String
+	item.Built = rawBuilt.String
+	item.Learned = rawLearned.String
+	item.TechStack = splitTags(rawTechStack)
+	item.Tags = splitTags(rawTags)
+	return item, nil
 }
 
 func splitTags(raw string) []string {

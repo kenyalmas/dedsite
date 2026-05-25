@@ -15,6 +15,8 @@
   --shadow: rgba(113, 64, 255, 0.22);
 }
 
+/* Base */
+
 * {
   box-sizing: border-box;
 }
@@ -43,6 +45,8 @@ body::before {
 a {
   color: inherit;
 }
+
+/* Terminal Shell */
 
 .terminal {
   width: min(1200px, calc(100% - 32px));
@@ -263,6 +267,8 @@ a {
   display: none;
 }
 
+/* Profile */
+
 .profile {
   align-self: start;
   position: sticky;
@@ -329,6 +335,8 @@ h1 {
   gap: 10px;
   margin-top: 12px;
 }
+
+/* Buttons And Links */
 
 .contact,
 .command-palette button,
@@ -403,6 +411,8 @@ h1 {
   height: 18px;
   fill: currentColor;
 }
+
+/* Portfolio Workspace */
 
 .portfolio {
   min-width: 0;
@@ -625,6 +635,8 @@ h1 {
   content: "=> ";
 }
 
+/* Detail Pages */
+
 .detail-shell {
   align-items: start;
 }
@@ -771,6 +783,8 @@ h1 {
   color: inherit;
 }
 
+/* Password Roast */
+
 .roast-shell {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -903,6 +917,8 @@ h1 {
     0 0 0 3px rgba(103, 232, 249, 0.14);
 }
 
+/* Tags */
+
 
 .tags {
   display: flex;
@@ -956,6 +972,8 @@ h1 {
   color: var(--accent);
   content: "--";
 }
+
+/* Admin */
 
 .admin-terminal {
   max-width: 980px;
@@ -1242,6 +1260,8 @@ h1 {
   color: var(--terminal-green);
 }
 
+/* Not Found */
+
 .not-found-terminal {
   max-width: 1040px;
 }
@@ -1407,6 +1427,8 @@ h1 {
   0% { transform: translateY(6px); opacity: 0.3; }
   100% { transform: translateY(0); opacity: 1; }
 }
+
+/* Responsive */
 
 @media (max-width: 760px) {
   .terminal {
