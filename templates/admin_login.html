@@ -22,19 +22,17 @@
     </div>
 
     <main class="admin-shell">
-      <form class="admin-form" method="post" action="/admin/login">
+      <section class="admin-form">
         <p class="detail-prompt">~/home $ sudo login</p>
         <h1>admin login</h1>
         {{ if .Error }}<p class="form-error">{{ .Error }}</p>{{ end }}
 
-        <label for="username">username</label>
-        <input id="username" name="username" type="text" autocomplete="username" required autofocus>
-
-        <label for="password">password</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" required>
-
-        <button type="submit">authenticate</button>
-      </form>
+        {{ if .GoogleOAuthEnabled }}
+          <a class="contact" href="/admin/login/google">Sign in with Google</a>
+        {{ else }}
+          <p class="description">Set Google OAuth environment variables to enable admin login.</p>
+        {{ end }}
+      </section>
     </main>
   </div>
 </body>

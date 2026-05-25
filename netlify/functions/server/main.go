@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -46,16 +47,17 @@ func initServer() error {
 	if err := store.SeedDefaults(); err != nil {
 		return err
 	}
-	if err := seedAdminFromEnv(store); err != nil {
-		return err
-	}
 
 	tmpl, err := template.ParseFS(siteFS, "templates/*.html", "templates/partials/*.html")
 	if err != nil {
 		return err
 	}
 
-	app := handlers.New(store, tmpl, true)
+	app := handlers.New(store, tmpl, true, handlers.GoogleOAuthConfig{
+		ClientID:      os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
+		ClientSecret:  os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+		AllowedEmails: splitCSVEnv(os.Getenv("GOOGLE_OAUTH_ALLOWED_EMAILS")),
+	})
 	mux := http.NewServeMux()
 	handlers.RegisterRoutes(mux, app)
 	staticFS, err := fs.Sub(siteFS, "static")
@@ -67,6 +69,18 @@ func initServer() error {
 
 	adapter = httpadapter.New(mux)
 	return nil
+}
+
+func splitCSVEnv(raw string) []string {
+	parts := strings.Split(raw, ",")
+	values := make([]string, 0, len(parts))
+	for _, part := range parts {
+		value := strings.ToLower(strings.TrimSpace(part))
+		if value != "" {
+			values = append(values, value)
+		}
+	}
+	return values
 }
 
 func main() {
@@ -88,19 +102,4 @@ func main() {
 		}
 		return adapter.Proxy(req)
 	})
-}
-
-func seedAdminFromEnv(store db.Store) error {
-	username := os.Getenv("ADMIN_USERNAME")
-	password := os.Getenv("ADMIN_PASSWORD")
-	if username == "" && password == "" {
-		return nil
-	}
-	if username == "" || password == "" {
-		return errors.New("ADMIN_USERNAME and ADMIN_PASSWORD must both be set")
-	}
-	if len(password) < 12 {
-		return errors.New("ADMIN_PASSWORD must be at least 12 characters")
-	}
-	return store.SetAdminPassword(username, password)
 }

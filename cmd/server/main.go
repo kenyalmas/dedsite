@@ -35,7 +35,7 @@ func main() {
 	}
 
 	if len(args) > 0 && args[0] != "serve" {
-		log.Fatalf("unknown command %q\nusage: dedsite [--port port] [--db path] [--no-seed] [serve] | dedsite [--db path] [--no-seed] cli [--json] [--pretty] <profile|sections|section|seed|admin>", args[0])
+		log.Fatalf("unknown command %q\nusage: dedsite [--port port] [--db path] [--no-seed] [serve] | dedsite [--db path] [--no-seed] cli [--json] [--pretty] <profile|sections|section|seed>", args[0])
 	}
 
 	if err := serve(options); err != nil {
@@ -48,6 +48,7 @@ type options struct {
 	dbPath            string
 	noSeed            bool
 	trustProxyHeaders bool
+	googleOAuth       handlers.GoogleOAuthConfig
 }
 
 type cliOptions struct {
@@ -55,16 +56,16 @@ type cliOptions struct {
 	pretty bool
 }
 
-type adminCLIOptions struct {
-	username string
-	password string
-}
-
 func parseOptions(args []string) (options, []string, error) {
 	values := options{
 		addr:              env("ADDR", ":8080"),
 		dbPath:            env("DATABASE_PATH", filepath.Join("data", "site.db")),
 		trustProxyHeaders: strings.EqualFold(env("TRUST_PROXY_HEADERS", "false"), "true"),
+		googleOAuth: handlers.GoogleOAuthConfig{
+			ClientID:      env("GOOGLE_OAUTH_CLIENT_ID", ""),
+			ClientSecret:  env("GOOGLE_OAUTH_CLIENT_SECRET", ""),
+			AllowedEmails: splitCSVEnv(env("GOOGLE_OAUTH_ALLOWED_EMAILS", "")),
+		},
 	}
 
 	flags := flag.NewFlagSet("dedsite", flag.ContinueOnError)
@@ -92,34 +93,6 @@ func parseCLIOptions(args []string) (cliOptions, []string, error) {
 		return cliOptions{}, nil, err
 	}
 	return values, flags.Args(), nil
-}
-
-func parseAdminCLIOptions(args []string) (adminCLIOptions, error) {
-	values := adminCLIOptions{}
-
-	flags := flag.NewFlagSet("dedsite cli admin", flag.ContinueOnError)
-	flags.StringVar(&values.username, "username", "", "admin username")
-	flags.StringVar(&values.password, "password", "", "admin password")
-
-	if err := flags.Parse(args); err != nil {
-		return adminCLIOptions{}, err
-	}
-	if flags.NArg() > 0 {
-		return adminCLIOptions{}, fmt.Errorf("unexpected admin argument %q", flags.Arg(0))
-	}
-
-	values.username = strings.TrimSpace(values.username)
-	if values.username == "" || values.password == "" {
-		return adminCLIOptions{}, errors.New("usage: dedsite cli admin --username <username> --password <password>")
-	}
-	if strings.EqualFold(values.username, "admin") && values.password == "password" {
-		return adminCLIOptions{}, errors.New("refusing insecure default admin credentials")
-	}
-	if len(values.password) < 12 {
-		return adminCLIOptions{}, errors.New("admin password must be at least 12 characters")
-	}
-
-	return values, nil
 }
 
 func normalizeAddr(value string) string {
@@ -156,7 +129,7 @@ func serve(options options) error {
 		return fmt.Errorf("parse partial templates: %w", err)
 	}
 
-	app := handlers.New(store, tmpl, options.trustProxyHeaders)
+	app := handlers.New(store, tmpl, options.trustProxyHeaders, options.googleOAuth)
 
 	mux := http.NewServeMux()
 	handlers.RegisterRoutes(mux, app)
@@ -192,7 +165,7 @@ func runCLI(options options, args []string) error {
 	}
 
 	if len(args) == 0 {
-		return errors.New("usage: dedsite cli [--json] [--pretty] <profile|sections|section|seed|admin>")
+		return errors.New("usage: dedsite cli [--json] [--pretty] <profile|sections|section|seed>")
 	}
 
 	conn, err := openStore(options.dbPath)
@@ -204,15 +177,6 @@ func runCLI(options options, args []string) error {
 	store := db.NewStore(conn)
 
 	switch args[0] {
-	case "admin":
-		admin, err := parseAdminCLIOptions(args[1:])
-		if err != nil {
-			return err
-		}
-		if err := store.SetAdminPassword(admin.username, admin.password); err != nil {
-			return fmt.Errorf("set admin password: %w", err)
-		}
-		return printValue(cli, map[string]string{"status": "admin credentials saved", "username": admin.username})
 	case "seed":
 		if options.noSeed {
 			return printValue(cli, map[string]string{"status": "seed skipped"})
@@ -325,4 +289,16 @@ func env(key, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func splitCSVEnv(raw string) []string {
+	parts := strings.Split(raw, ",")
+	values := make([]string, 0, len(parts))
+	for _, part := range parts {
+		value := strings.ToLower(strings.TrimSpace(part))
+		if value != "" {
+			values = append(values, value)
+		}
+	}
+	return values
 }

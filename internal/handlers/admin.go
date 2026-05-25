@@ -3,13 +3,11 @@ package handlers
 import (
 	"database/sql"
 	"errors"
-	"net"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"dedsite/internal/auth"
@@ -17,7 +15,8 @@ import (
 )
 
 type LoginPage struct {
-	Error string
+	Error              string
+	GoogleOAuthEnabled bool
 }
 
 type AdminPage struct {
@@ -41,51 +40,23 @@ type AdminSectionsPage struct {
 
 var slugPattern = regexp.MustCompile(`[^a-z0-9]+`)
 
-var (
-	adminLoginLimiterMu sync.Mutex
-	adminLoginAttempts  = map[string]loginAttempt{}
-)
+func (h Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
+	if !h.googleOAuth.enabled() {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		h.render(w, "admin_login.html", LoginPage{
+			Error:              "Google OAuth is not configured.",
+			GoogleOAuthEnabled: false,
+		})
+		return
+	}
 
-type loginAttempt struct {
-	Count     int
-	BlockedTo time.Time
+	h.render(w, "admin_login.html", LoginPage{GoogleOAuthEnabled: true})
 }
 
-func (h Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		h.render(w, "admin_login.html", LoginPage{})
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Could not read login form", http.StatusBadRequest)
-		return
-	}
-
-	username := strings.TrimSpace(r.FormValue("username"))
-	password := r.FormValue("password")
-	if blocked, wait := adminLoginBlocked(loginKey(r, username)); blocked {
-		w.WriteHeader(http.StatusTooManyRequests)
-		h.render(w, "admin_login.html", LoginPage{Error: "too many login attempts; wait " + wait})
-		return
-	}
-	user, ok, err := h.store.AuthenticateAdmin(username, password)
-	if err != nil {
-		http.Error(w, "Could not validate login", http.StatusInternalServerError)
-		return
-	}
-	if !ok {
-		recordAdminLoginFailure(loginKey(r, username))
-		w.WriteHeader(http.StatusUnauthorized)
-		h.render(w, "admin_login.html", LoginPage{Error: "invalid username or password"})
-		return
-	}
-	clearAdminLoginFailures(loginKey(r, username))
-
+func (h Handler) startAdminSession(w http.ResponseWriter, r *http.Request, user db.AdminUser) error {
 	token, csrfToken, expires, err := h.store.CreateAdminSession(user.ID, 12*time.Hour)
 	if err != nil {
-		http.Error(w, "Could not create session", http.StatusInternalServerError)
-		return
+		return err
 	}
 	secureCookie := isSecureRequest(r, h.trustProxyHeaders)
 
@@ -107,7 +78,7 @@ func (h Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 		Secure:   secureCookie,
 		SameSite: http.SameSiteLaxMode,
 	})
-	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	return nil
 }
 
 func (h Handler) Admin(w http.ResponseWriter, r *http.Request) {
@@ -545,49 +516,4 @@ func isSecureRequest(r *http.Request, trustProxyHeaders bool) bool {
 		return false
 	}
 	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
-}
-
-func loginKey(r *http.Request, username string) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		host = r.RemoteAddr
-	}
-	return strings.ToLower(strings.TrimSpace(username)) + "|" + host
-}
-
-func adminLoginBlocked(key string) (bool, string) {
-	adminLoginLimiterMu.Lock()
-	defer adminLoginLimiterMu.Unlock()
-
-	attempt := adminLoginAttempts[key]
-	now := time.Now()
-	if attempt.BlockedTo.After(now) {
-		return true, attempt.BlockedTo.Sub(now).Round(time.Second).String()
-	}
-	if !attempt.BlockedTo.IsZero() && !attempt.BlockedTo.After(now) {
-		delete(adminLoginAttempts, key)
-	}
-	return false, ""
-}
-
-func recordAdminLoginFailure(key string) {
-	adminLoginLimiterMu.Lock()
-	defer adminLoginLimiterMu.Unlock()
-
-	attempt := adminLoginAttempts[key]
-	attempt.Count++
-	if attempt.Count >= 5 {
-		backoff := time.Duration(attempt.Count-4) * 15 * time.Second
-		if backoff > 5*time.Minute {
-			backoff = 5 * time.Minute
-		}
-		attempt.BlockedTo = time.Now().Add(backoff)
-	}
-	adminLoginAttempts[key] = attempt
-}
-
-func clearAdminLoginFailures(key string) {
-	adminLoginLimiterMu.Lock()
-	defer adminLoginLimiterMu.Unlock()
-	delete(adminLoginAttempts, key)
 }

@@ -19,36 +19,24 @@ type AdminSession struct {
 	ExpiresAt time.Time
 }
 
-func (s Store) SetAdminPassword(username string, password string) error {
-	hash, err := auth.HashPassword(password)
-	if err != nil {
-		return err
-	}
-
-	_, err = s.conn.Exec(`
+func (s Store) EnsureOAuthAdmin(username string) (AdminUser, error) {
+	// password_hash is retained for existing SQLite schemas; OAuth accounts do not use local passwords.
+	_, err := s.conn.Exec(`
 		INSERT INTO admin_users (username, password_hash)
 		VALUES (?, ?)
-		ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash
-	`, username, hash)
-	return err
-}
-
-func (s Store) AuthenticateAdmin(username string, password string) (AdminUser, bool, error) {
-	var user AdminUser
-	var hash string
-	err := s.conn.QueryRow(`
-		SELECT id, username, password_hash
-		FROM admin_users
-		WHERE username = ?
-	`, username).Scan(&user.ID, &user.Username, &hash)
+		ON CONFLICT(username) DO NOTHING
+	`, username, "oauth_google")
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return AdminUser{}, false, nil
-		}
-		return AdminUser{}, false, err
+		return AdminUser{}, err
 	}
 
-	return user, auth.VerifyPassword(hash, password), nil
+	var user AdminUser
+	err = s.conn.QueryRow(`
+		SELECT id, username
+		FROM admin_users
+		WHERE username = ?
+	`, username).Scan(&user.ID, &user.Username)
+	return user, err
 }
 
 func (s Store) CreateAdminSession(userID int64, duration time.Duration) (string, string, time.Time, error) {
