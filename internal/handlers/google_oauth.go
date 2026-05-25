@@ -156,6 +156,10 @@ func (h Handler) fetchGoogleUserInfo(r *http.Request, code string) (googleUserIn
 }
 
 func (h Handler) googleRedirectURI(r *http.Request) string {
+	if h.googleOAuth.publicOrigin != "" {
+		return h.googleOAuth.publicOrigin + "/admin/login/google/callback"
+	}
+
 	scheme := "http"
 	if isSecureRequest(r, h.trustProxyHeaders) {
 		scheme = "https"

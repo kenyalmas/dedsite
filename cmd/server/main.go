@@ -62,9 +62,10 @@ func parseOptions(args []string) (options, []string, error) {
 		dbPath:            env("DATABASE_PATH", filepath.Join("data", "site.db")),
 		trustProxyHeaders: strings.EqualFold(env("TRUST_PROXY_HEADERS", "false"), "true"),
 		googleOAuth: handlers.GoogleOAuthConfig{
-			ClientID:      env("GOOGLE_OAUTH_CLIENT_ID", ""),
-			ClientSecret:  env("GOOGLE_OAUTH_CLIENT_SECRET", ""),
-			AllowedEmails: splitCSVEnv(env("GOOGLE_OAUTH_ALLOWED_EMAILS", "")),
+			ClientID:           env("GOOGLE_OAUTH_CLIENT_ID", ""),
+			ClientSecret:       env("GOOGLE_OAUTH_CLIENT_SECRET", ""),
+			AllowedEmailHashes: splitCSVEnv(env("GOOGLE_OAUTH_ALLOWED_EMAIL_HASHES", "")),
+			PublicOrigin:       env("SITE_PUBLIC_ORIGIN", ""),
 		},
 	}
 

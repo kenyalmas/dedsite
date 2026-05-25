@@ -54,9 +54,10 @@ func initServer() error {
 	}
 
 	app := handlers.New(store, tmpl, true, handlers.GoogleOAuthConfig{
-		ClientID:      os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
-		ClientSecret:  os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
-		AllowedEmails: splitCSVEnv(os.Getenv("GOOGLE_OAUTH_ALLOWED_EMAILS")),
+		ClientID:           os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
+		ClientSecret:       os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+		AllowedEmailHashes: splitCSVEnv(os.Getenv("GOOGLE_OAUTH_ALLOWED_EMAIL_HASHES")),
+		PublicOrigin:       os.Getenv("SITE_PUBLIC_ORIGIN"),
 	})
 	mux := http.NewServeMux()
 	handlers.RegisterRoutes(mux, app)

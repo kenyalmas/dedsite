@@ -17,3 +17,6 @@
 *.db binary
 *.sqlite binary
 *.sqlite3 binary
+
+netlify.toml merge=ours
+.netlify/** merge=ours

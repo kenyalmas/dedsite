@@ -5,11 +5,11 @@ import (
 	"testing"
 )
 
-func TestGoogleOAuthConfigNormalizesAllowedEmails(t *testing.T) {
+func TestGoogleOAuthConfigNormalizesAllowedEmailHashes(t *testing.T) {
 	config := newGoogleOAuthConfig(GoogleOAuthConfig{
-		ClientID:      "client",
-		ClientSecret:  "secret",
-		AllowedEmails: []string{" Admin@Example.COM ", "", "other@example.com"},
+		ClientID:           "client",
+		ClientSecret:       "secret",
+		AllowedEmailHashes: []string{" 258D8DC916DB8CEA2CAFB6C3CD0CB0246EFE061421DBD83EC3A350428CABDA4F ", "", "5b71ed5f946240dc76f3b7c24bdcbbc3528284ec5f4519249fb702686f0df5b8"},
 	})
 
 	if !config.enabled() {
@@ -26,9 +26,9 @@ func TestGoogleOAuthConfigNormalizesAllowedEmails(t *testing.T) {
 func TestAllowsGoogleUser(t *testing.T) {
 	handler := Handler{
 		googleOAuth: newGoogleOAuthConfig(GoogleOAuthConfig{
-			ClientID:      "client",
-			ClientSecret:  "secret",
-			AllowedEmails: []string{"admin@example.com"},
+			ClientID:           "client",
+			ClientSecret:       "secret",
+			AllowedEmailHashes: []string{"258d8dc916db8cea2cafb6c3cd0cb0246efe061421dbd83ec3a350428cabda4f"},
 		}),
 	}
 
@@ -88,5 +88,31 @@ func TestGoogleRedirectURI(t *testing.T) {
 	handler.trustProxyHeaders = true
 	if got := handler.googleRedirectURI(req); got != "https://localhost:8090/admin/login/google/callback" {
 		t.Fatalf("googleRedirectURI() with trusted proxy = %q", got)
+	}
+}
+
+func TestGoogleRedirectURIUsesConfiguredPublicOrigin(t *testing.T) {
+	req := httptest.NewRequest("GET", "http://internal.example/admin/login", nil)
+	handler := Handler{
+		googleOAuth: newGoogleOAuthConfig(GoogleOAuthConfig{
+			PublicOrigin: "https://portfolio.example/",
+		}),
+	}
+
+	if got := handler.googleRedirectURI(req); got != "https://portfolio.example/admin/login/google/callback" {
+		t.Fatalf("googleRedirectURI() with configured origin = %q", got)
+	}
+}
+
+func TestGoogleRedirectURIAddsHTTPSForBarePublicOrigin(t *testing.T) {
+	req := httptest.NewRequest("GET", "http://internal.example/admin/login", nil)
+	handler := Handler{
+		googleOAuth: newGoogleOAuthConfig(GoogleOAuthConfig{
+			PublicOrigin: "portfolio.example",
+		}),
+	}
+
+	if got := handler.googleRedirectURI(req); got != "https://portfolio.example/admin/login/google/callback" {
+		t.Fatalf("googleRedirectURI() with bare configured origin = %q", got)
 	}
 }

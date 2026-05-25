@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"html/template"
 	"net/http"
 	"strings"
@@ -16,15 +18,17 @@ type Handler struct {
 }
 
 type GoogleOAuthConfig struct {
-	ClientID      string
-	ClientSecret  string
-	AllowedEmails []string
+	ClientID           string
+	ClientSecret       string
+	AllowedEmailHashes []string
+	PublicOrigin       string
 }
 
 type googleOAuthConfig struct {
-	clientID      string
-	clientSecret  string
-	allowedEmails map[string]bool
+	clientID           string
+	clientSecret       string
+	allowedEmailHashes map[string]bool
+	publicOrigin       string
 }
 
 func New(store db.Store, templates *template.Template, trustProxyHeaders bool, googleOAuth GoogleOAuthConfig) Handler {
@@ -37,26 +41,39 @@ func New(store db.Store, templates *template.Template, trustProxyHeaders bool, g
 }
 
 func newGoogleOAuthConfig(config GoogleOAuthConfig) googleOAuthConfig {
-	allowed := make(map[string]bool, len(config.AllowedEmails))
-	for _, email := range config.AllowedEmails {
-		email = strings.ToLower(strings.TrimSpace(email))
-		if email != "" {
-			allowed[email] = true
+	allowed := make(map[string]bool, len(config.AllowedEmailHashes))
+	for _, hash := range config.AllowedEmailHashes {
+		hash = strings.ToLower(strings.TrimSpace(hash))
+		if hash != "" {
+			allowed[hash] = true
 		}
 	}
 	return googleOAuthConfig{
-		clientID:      config.ClientID,
-		clientSecret:  config.ClientSecret,
-		allowedEmails: allowed,
+		clientID:           config.ClientID,
+		clientSecret:       config.ClientSecret,
+		allowedEmailHashes: allowed,
+		publicOrigin:       normalizePublicOrigin(config.PublicOrigin),
 	}
 }
 
 func (c googleOAuthConfig) enabled() bool {
-	return c.clientID != "" && c.clientSecret != "" && len(c.allowedEmails) > 0
+	return c.clientID != "" && c.clientSecret != "" && len(c.allowedEmailHashes) > 0
 }
 
 func (c googleOAuthConfig) allows(email string) bool {
-	return c.allowedEmails[email]
+	sum := sha256.Sum256([]byte(strings.ToLower(strings.TrimSpace(email))))
+	return c.allowedEmailHashes[hex.EncodeToString(sum[:])]
+}
+
+func normalizePublicOrigin(origin string) string {
+	origin = strings.TrimRight(strings.TrimSpace(origin), "/")
+	if origin == "" {
+		return ""
+	}
+	if strings.HasPrefix(origin, "http://") || strings.HasPrefix(origin, "https://") {
+		return origin
+	}
+	return "https://" + origin
 }
 
 func (h Handler) render(w http.ResponseWriter, name string, data any) {
