@@ -9,6 +9,7 @@ func RegisterRoutes(mux *http.ServeMux, app Handler) {
 	mux.HandleFunc("GET /project/{slug}", app.Project)
 	mux.HandleFunc("GET /awareness", app.Awareness)
 	mux.HandleFunc("GET /awareness/data", app.AwarenessData)
+	mux.HandleFunc("GET /password-roast", app.PasswordRoast)
 	mux.HandleFunc("GET /admin", app.Admin)
 	mux.HandleFunc("GET /admin/login", app.AdminLogin)
 	mux.HandleFunc("POST /admin/login", app.AdminLogin)
