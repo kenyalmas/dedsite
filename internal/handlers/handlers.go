@@ -306,6 +306,10 @@ func (h Handler) Awareness(w http.ResponseWriter, r *http.Request) {
 	h.render(w, "awareness.html", nil)
 }
 
+func (h Handler) PasswordRoast(w http.ResponseWriter, r *http.Request) {
+	h.render(w, "password_roast.html", nil)
+}
+
 func (h Handler) AwarenessData(w http.ResponseWriter, r *http.Request) {
 	ip := requestIP(r, h.trustProxyHeaders)
 	payload := map[string]string{

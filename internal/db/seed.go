@@ -172,7 +172,7 @@ func (s Store) EnsureDefaultSections() error {
 
 	if err := ensureItem(tx, "work", Item{
 		Slug:        "aas-hardware-software-support",
-		Title:       "Associates in Applied Science in Hardware & Software Support",
+		Title:       "AAS in Hardware & Software Support",
 		Subtitle:    "Sandhill Community College",
 		Period:      "2024 - 2026",
 		Description: "Graduate with honors.",
@@ -287,6 +287,40 @@ func ensureItem(conn itemInserter, sectionSlug string, item Item, sortOrder int)
 	var sectionID int64
 	if err := conn.QueryRow(`SELECT id FROM sections WHERE slug = ?`, sectionSlug).Scan(&sectionID); err != nil {
 		return err
+	}
+
+	if item.Slug != "" {
+		var existingID int64
+		err := conn.QueryRow(`SELECT id FROM items WHERE section_id = ? AND slug = ? ORDER BY id LIMIT 1`, sectionID, item.Slug).Scan(&existingID)
+		if err != nil && err != sql.ErrNoRows {
+			return err
+		}
+		if err == nil {
+			if _, err := conn.Exec(`DELETE FROM items WHERE section_id = ? AND slug = ? AND id <> ?`, sectionID, item.Slug, existingID); err != nil {
+				return err
+			}
+			_, err := conn.Exec(`
+				UPDATE items
+				SET title = ?, subtitle = ?, period = ?, description = ?, url = ?, image_url = ?, image_alt = ?, problem = ?, built = ?, learned = ?, tech_stack = ?, tags = ?, sort_order = ?
+				WHERE id = ?
+			`,
+				item.Title,
+				item.Subtitle,
+				item.Period,
+				item.Description,
+				item.URL,
+				item.ImageURL,
+				item.ImageAlt,
+				item.Problem,
+				item.Built,
+				item.Learned,
+				joinTags(item.TechStack),
+				joinTags(item.Tags),
+				sortOrder,
+				existingID,
+			)
+			return err
+		}
 	}
 
 	var count int
