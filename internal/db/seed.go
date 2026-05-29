@@ -167,8 +167,8 @@ func ensureItem(conn itemInserter, sectionSlug string, item Item, sortOrder int)
 				item.Problem,
 				item.Built,
 				item.Learned,
-				joinValues(item.TechStack),
-				joinValues(item.Tags),
+				JoinList(item.TechStack),
+				JoinList(item.Tags),
 				sortOrder,
 				existingID,
 			)
@@ -196,8 +196,8 @@ func ensureItem(conn itemInserter, sectionSlug string, item Item, sortOrder int)
 		item.Problem,
 		item.Built,
 		item.Learned,
-		joinValues(item.TechStack),
-		joinValues(item.Tags),
+		JoinList(item.TechStack),
+		JoinList(item.Tags),
 		sortOrder,
 	)
 	return err

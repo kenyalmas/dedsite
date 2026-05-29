@@ -13,6 +13,12 @@ type Section struct {
 	Items []Item
 }
 
+type SectionRef struct {
+	ID    int64
+	Slug  string
+	Title string
+}
+
 type Item struct {
 	ID          int64
 	Slug        string
