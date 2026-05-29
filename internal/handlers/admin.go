@@ -25,7 +25,7 @@ type AdminPage struct {
 }
 
 type EntryFormPage struct {
-	Section   db.Section
+	Section   db.SectionRef
 	Item      db.Item
 	Error     string
 	Success   string
@@ -114,7 +114,7 @@ func (h Handler) AdminEntryForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	section, err := h.store.Section(r.PathValue("slug"))
+	section, err := h.store.SectionRef(r.PathValue("slug"))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.NotFound(w, r)
@@ -135,7 +135,7 @@ func (h Handler) AdminEditEntryForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	section, err := h.store.Section(r.PathValue("slug"))
+	section, err := h.store.SectionRef(r.PathValue("slug"))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.NotFound(w, r)
@@ -177,7 +177,7 @@ func (h Handler) AdminCreateEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	section, err := h.store.Section(r.PathValue("slug"))
+	section, err := h.store.SectionRef(r.PathValue("slug"))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.NotFound(w, r)
@@ -215,7 +215,7 @@ func (h Handler) AdminCreateEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	section, err = h.store.Section(section.Slug)
+	section, err = h.store.SectionRef(section.Slug)
 	if err != nil {
 		http.Error(w, "Could not reload section", http.StatusInternalServerError)
 		return
@@ -236,7 +236,7 @@ func (h Handler) AdminUpdateEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	section, err := h.store.Section(r.PathValue("slug"))
+	section, err := h.store.SectionRef(r.PathValue("slug"))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.NotFound(w, r)
@@ -464,21 +464,9 @@ func itemFromForm(r *http.Request) db.Item {
 		Problem:     strings.TrimSpace(r.FormValue("problem")),
 		Built:       strings.TrimSpace(r.FormValue("built")),
 		Learned:     strings.TrimSpace(r.FormValue("learned")),
-		TechStack:   splitCSV(r.FormValue("tech_stack")),
-		Tags:        splitCSV(r.FormValue("tags")),
+		TechStack:   db.ParseList(r.FormValue("tech_stack")),
+		Tags:        db.ParseList(r.FormValue("tags")),
 	}
-}
-
-func splitCSV(raw string) []string {
-	parts := strings.Split(raw, ",")
-	values := make([]string, 0, len(parts))
-	for _, part := range parts {
-		value := strings.TrimSpace(part)
-		if value != "" {
-			values = append(values, value)
-		}
-	}
-	return values
 }
 
 func slugify(value string) string {

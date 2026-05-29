@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+const itemColumns = `
+	id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
+`
+
 type Store struct {
 	conn *sql.DB
 }
@@ -48,51 +52,81 @@ func (s Store) Profile() (Profile, error) {
 }
 
 func (s Store) Sections() ([]Section, error) {
-	rows, err := s.conn.Query(`SELECT id, slug, title FROM sections ORDER BY sort_order, id`)
+	records, err := s.sectionRecords()
+	if err != nil {
+		return nil, err
+	}
+
+	sections := make([]Section, len(records))
+	indexByID := make(map[int64]int, len(records))
+	for i, record := range records {
+		sections[i] = Section{
+			Slug:  record.Slug,
+			Title: record.Title,
+		}
+		indexByID[record.ID] = i
+	}
+
+	if len(sections) == 0 {
+		return sections, nil
+	}
+
+	rows, err := s.conn.Query(`
+		SELECT section_id, ` + itemColumns + `
+		FROM items
+		ORDER BY section_id, sort_order, id
+	`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var sections []Section
 	for rows.Next() {
-		var id int64
-		var section Section
-		if err := rows.Scan(&id, &section.Slug, &section.Title); err != nil {
-			return nil, err
-		}
-
-		// Items are loaded per section because the UI renders section cards as a nested tree.
-		items, err := s.items(id)
+		var sectionID int64
+		item, err := scanItemWithSection(rows, &sectionID)
 		if err != nil {
 			return nil, err
 		}
-		section.Items = items
-		sections = append(sections, section)
+		index, ok := indexByID[sectionID]
+		if !ok {
+			continue
+		}
+		sections[index].Items = append(sections[index].Items, item)
 	}
 
 	return sections, rows.Err()
 }
 
 func (s Store) Section(slug string) (Section, error) {
-	var id int64
-	var section Section
-	err := s.conn.QueryRow(`SELECT id, slug, title FROM sections WHERE slug = ?`, slug).Scan(&id, &section.Slug, &section.Title)
+	record, err := s.SectionRef(slug)
 	if err != nil {
 		return Section{}, err
 	}
 
-	section.Items, err = s.items(id)
+	items, err := s.items(record.ID)
 	if err != nil {
 		return Section{}, err
 	}
 
+	return Section{
+		Slug:  record.Slug,
+		Title: record.Title,
+		Items: items,
+	}, nil
+}
+
+func (s Store) SectionRef(slug string) (SectionRef, error) {
+	var section SectionRef
+	err := s.conn.QueryRow(`SELECT id, slug, title FROM sections WHERE slug = ?`, slug).Scan(&section.ID, &section.Slug, &section.Title)
+	if err != nil {
+		return SectionRef{}, err
+	}
 	return section, nil
 }
 
 func (s Store) AddItem(sectionSlug string, item Item) error {
-	var sectionID int64
-	if err := s.conn.QueryRow(`SELECT id FROM sections WHERE slug = ?`, sectionSlug).Scan(&sectionID); err != nil {
+	sectionID, err := s.sectionIDBySlug(sectionSlug)
+	if err != nil {
 		return err
 	}
 
@@ -101,7 +135,7 @@ func (s Store) AddItem(sectionSlug string, item Item) error {
 		return err
 	}
 
-	_, err := s.conn.Exec(`
+	_, err = s.conn.Exec(`
 		INSERT INTO items (section_id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags, sort_order)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
@@ -117,20 +151,20 @@ func (s Store) AddItem(sectionSlug string, item Item) error {
 		item.Problem,
 		item.Built,
 		item.Learned,
-		joinValues(item.TechStack),
-		joinValues(item.Tags),
+		JoinList(item.TechStack),
+		JoinList(item.Tags),
 		sortOrder,
 	)
 	return err
 }
 
 func (s Store) UpdateItem(sectionSlug string, item Item) error {
-	var sectionID int64
-	if err := s.conn.QueryRow(`SELECT id FROM sections WHERE slug = ?`, sectionSlug).Scan(&sectionID); err != nil {
+	sectionID, err := s.sectionIDBySlug(sectionSlug)
+	if err != nil {
 		return err
 	}
 
-	_, err := s.conn.Exec(`
+	_, err = s.conn.Exec(`
 		UPDATE items
 		SET slug = ?, title = ?, subtitle = ?, period = ?, description = ?, url = ?, image_url = ?, image_alt = ?, problem = ?, built = ?, learned = ?, tech_stack = ?, tags = ?
 		WHERE id = ? AND section_id = ?
@@ -146,8 +180,8 @@ func (s Store) UpdateItem(sectionSlug string, item Item) error {
 		item.Problem,
 		item.Built,
 		item.Learned,
-		joinValues(item.TechStack),
-		joinValues(item.Tags),
+		JoinList(item.TechStack),
+		JoinList(item.Tags),
 		item.ID,
 		sectionID,
 	)
@@ -161,7 +195,7 @@ func (s Store) DeleteItem(id int64) error {
 
 func (s Store) ItemByID(id int64) (Item, error) {
 	return scanItem(s.conn.QueryRow(`
-		SELECT id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
+		SELECT `+itemColumns+`
 		FROM items
 		WHERE id = ?
 	`, id))
@@ -169,7 +203,7 @@ func (s Store) ItemByID(id int64) (Item, error) {
 
 func (s Store) Item(slug string) (Item, error) {
 	return scanItem(s.conn.QueryRow(`
-		SELECT id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
+		SELECT `+itemColumns+`
 		FROM items
 		WHERE slug = ?
 	`, slug))
@@ -177,7 +211,7 @@ func (s Store) Item(slug string) (Item, error) {
 
 func (s Store) items(sectionID int64) ([]Item, error) {
 	rows, err := s.conn.Query(`
-		SELECT id, slug, title, subtitle, period, description, url, image_url, image_alt, problem, built, learned, tech_stack, tags
+		SELECT `+itemColumns+`
 		FROM items
 		WHERE section_id = ?
 		ORDER BY sort_order, id
@@ -199,19 +233,52 @@ func (s Store) items(sectionID int64) ([]Item, error) {
 	return items, rows.Err()
 }
 
+func (s Store) sectionRecords() ([]SectionRef, error) {
+	rows, err := s.conn.Query(`SELECT id, slug, title FROM sections ORDER BY sort_order, id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var records []SectionRef
+	for rows.Next() {
+		var record SectionRef
+		if err := rows.Scan(&record.ID, &record.Slug, &record.Title); err != nil {
+			return nil, err
+		}
+		records = append(records, record)
+	}
+
+	return records, rows.Err()
+}
+
+func (s Store) sectionIDBySlug(slug string) (int64, error) {
+	var sectionID int64
+	err := s.conn.QueryRow(`SELECT id FROM sections WHERE slug = ?`, slug).Scan(&sectionID)
+	return sectionID, err
+}
+
 type itemScanner interface {
 	Scan(dest ...any) error
 }
 
 func scanItem(scanner itemScanner) (Item, error) {
+	return scanItemWithSection(scanner, nil)
+}
+
+func scanItemWithSection(scanner itemScanner, sectionID *int64) (Item, error) {
 	var item Item
+	var destinations []any
 	var rawSlug sql.NullString
 	var rawProblem sql.NullString
 	var rawBuilt sql.NullString
 	var rawLearned sql.NullString
 	var rawTechStack string
 	var rawTags string
-	if err := scanner.Scan(
+	if sectionID != nil {
+		destinations = append(destinations, sectionID)
+	}
+	destinations = append(destinations,
 		&item.ID,
 		&rawSlug,
 		&item.Title,
@@ -226,7 +293,8 @@ func scanItem(scanner itemScanner) (Item, error) {
 		&rawLearned,
 		&rawTechStack,
 		&rawTags,
-	); err != nil {
+	)
+	if err := scanner.Scan(destinations...); err != nil {
 		return Item{}, err
 	}
 
@@ -234,12 +302,12 @@ func scanItem(scanner itemScanner) (Item, error) {
 	item.Problem = rawProblem.String
 	item.Built = rawBuilt.String
 	item.Learned = rawLearned.String
-	item.TechStack = splitTags(rawTechStack)
-	item.Tags = splitTags(rawTags)
+	item.TechStack = ParseList(rawTechStack)
+	item.Tags = ParseList(rawTags)
 	return item, nil
 }
 
-func splitTags(raw string) []string {
+func ParseList(raw string) []string {
 	if raw == "" {
 		return nil
 	}
@@ -256,7 +324,11 @@ func splitTags(raw string) []string {
 	return tags
 }
 
-func joinValues(values []string) string {
+func JoinList(values []string) string {
+	return strings.Join(NormalizeList(values), ",")
+}
+
+func NormalizeList(values []string) []string {
 	clean := make([]string, 0, len(values))
 	for _, value := range values {
 		value = strings.TrimSpace(value)
@@ -264,5 +336,5 @@ func joinValues(values []string) string {
 			clean = append(clean, value)
 		}
 	}
-	return strings.Join(clean, ",")
+	return clean
 }
